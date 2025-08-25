@@ -6,7 +6,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Label } from "@/components/ui/label";
+
 
 import type { FormInputProps } from "./form-types";
 import { FormTextInput, FormTextInputProps } from "./form-text-input";

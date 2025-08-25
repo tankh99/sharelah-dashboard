@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { StallStatus, UserRole, UserGender, UserStatus } from './enums';
+import { StallStatus } from './enums';
 
 // Export inferred types from Zod schemas
 export type LoginForm = z.infer<typeof loginSchema>;

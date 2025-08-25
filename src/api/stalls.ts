@@ -1,6 +1,6 @@
 import { Stall } from '@/lib/types';
 import { StallForm } from '@/lib/validations';
-import { apiRequest, ApiError } from './utils';
+import { apiRequest } from './utils';
 
 // Stalls API functions
 export const stallsApi = {

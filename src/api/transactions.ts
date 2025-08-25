@@ -1,6 +1,6 @@
 import { Transaction } from '@/lib/types';
 import { TransactionForm } from '@/lib/validations';
-import { apiRequest, ApiError } from './utils';
+import { apiRequest } from './utils';
 
 // Transactions API functions
 export const transactionsApi = {

@@ -10,7 +10,7 @@ import { UserRole, UserGender, UserStatus } from '@/lib/enums';
 export const mapBackendUserToFrontend = (backendUser: BackendUser): User => {
   // Map userRoles to roles - assuming the first role is the primary one
   const roles: UserRole[] = backendUser.userRoles.length > 0 ? [UserRole.ADMIN] : [UserRole.USER];
-  
+
   // Map gender
   let gender: UserGender;
   switch (backendUser.gender?.toLowerCase()) {
@@ -38,21 +38,14 @@ export const mapBackendUserToFrontend = (backendUser: BackendUser): User => {
   }
 
   return {
-    id: backendUser._id,
+    _id: backendUser._id,
     name: backendUser.name || `${backendUser.firstName} ${backendUser.lastName}`.trim(),
-    dateOfBirth: backendUser.dateOfBirth || '1990-01-01',
     gender,
     phoneNumber: '', // Not provided in backend response
     email: backendUser.email,
-    password: '', // Don't store password
-    verifyPassword: '', // Don't store verify password
-    roles,
-    deviceId: backendUser.deviceId || '',
-    facebookId: '', // Not provided in backend response
-    status,
-    properties: [], // Not provided in backend response
-    createdAt: new Date(backendUser.created),
-    updatedAt: new Date(backendUser.created), // Using created as updated for now
+    yearOfBirth: 0,
+    created: new Date(),
+    userRoles: backendUser.userRoles
   };
 };
 
@@ -60,21 +53,21 @@ export const mapBackendUserToFrontend = (backendUser: BackendUser): User => {
  * Checks if a user has admin privileges
  */
 export const isAdmin = (user: User | null): boolean => {
-  return user?.roles.includes(UserRole.ADMIN) ?? false;
+  return user?.userRoles.includes(UserRole.ADMIN) ?? false;
 };
 
 /**
  * Checks if a user has moderator privileges
  */
 export const isModerator = (user: User | null): boolean => {
-  return user?.roles.includes(UserRole.MODERATOR) ?? false;
+  return user?.userRoles.includes(UserRole.MODERATOR) ?? false;
 };
 
 /**
  * Checks if a user has any of the specified roles
  */
 export const hasRole = (user: User | null, roles: UserRole[]): boolean => {
-  return user?.roles.some(role => roles.includes(role)) ?? false;
+  return user?.userRoles.some(role => roles.includes(role as UserRole)) ?? false;
 };
 
 /**

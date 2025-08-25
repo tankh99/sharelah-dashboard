@@ -19,7 +19,6 @@ export type FormSelectInputProps = FormInputProps & {
   optionLabelKey: string;
   // The strins that indexes the object's label and value
   optionValueKey: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   options: Array<any>;
   selectProps?: Record<string, unknown>;
 };

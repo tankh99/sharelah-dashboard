@@ -1,4 +1,4 @@
-import { StallStatus, UserRole, UserGender, UserStatus } from './enums';
+import { StallStatus } from './enums';
 
 export interface User {
   _id: string;
@@ -7,12 +7,8 @@ export interface User {
   gender: string;
   phoneNumber: string;
   email: string;
-  provider: string;
-  stripeCustomerId?: string;
-  defaultPassword: boolean;
-  status: string;
-  userRoles: string[];
   created: Date;
+  userRoles: string[]
 }
 
 export interface Stall {

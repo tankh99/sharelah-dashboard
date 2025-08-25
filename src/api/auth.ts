@@ -30,7 +30,7 @@ export interface BackendUser {
   accessToken: string;
 }
 
-export interface LoginResponse extends BackendUser {}
+export type LoginResponse = BackendUser;
 
 export const authApi = {
   async login(credentials: LoginCredentials): Promise<LoginResponse> {
@@ -43,7 +43,7 @@ export const authApi = {
   async getProfile(): Promise<User | null> {
     try {
       return await apiRequest<User>('/users/me');
-    } catch (error) {
+    } catch {
       // If 401/403, user is not authenticated
       return null;
     }

@@ -11,7 +11,6 @@ import {
 import { Label } from "@/components/ui/label";
 
 import type { FormInputProps } from "./form-types";
-import OtherCheckbox from "./other-checkbox";
 
 export type FormCheckboxesProps = FormInputProps & {
   description?: string;
@@ -19,7 +18,7 @@ export type FormCheckboxesProps = FormInputProps & {
   optionLabelKey: string;
   // The string that indexes the object's value, e.g. id
   optionValueKey: string;
-  options: Array<any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+  options: Array<any>;
   withOthers?: boolean;
 };
 
@@ -51,7 +50,7 @@ export function FormCheckboxes(props: FormCheckboxesProps) {
           <FormControl>
             <div className="flex flex-col space-y-4">
               {options
-                ? options.map((option, index) => {
+                ? options.map((option) => {
                     const optionValue = option[optionValueKey];
                     const optionLabel = option[optionLabelKey];
                     const id = `${optionValue}-${optionLabel}`;
@@ -82,10 +81,7 @@ export function FormCheckboxes(props: FormCheckboxesProps) {
                     );
                   })
                 : []}
-              
-              {withOthers ? (
-                <OtherCheckbox field={field} form={form} name={name} />
-              ) : null}
+
             </div>
           </FormControl>
         </FormItem>

@@ -7,15 +7,13 @@ import { TransactionFormComponent } from '@/components/forms/TransactionForm';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft } from 'lucide-react';
-import { User, Stall } from '@/lib/types';
+
 import { TransactionForm } from '@/lib/validations';
 import { usersApi, stallsApi, transactionsApi } from '@/api';
 import { ApiError } from '@/api/utils';
 
 export default function CreateTransactionPage() {
   const router = useRouter();
-  const [users, setUsers] = useState<User[]>([]);
-  const [stalls, setStalls] = useState<Stall[]>([]);
   const [formUsers, setFormUsers] = useState<Array<{ id: string; name: string }>>([]);
   const [formStalls, setFormStalls] = useState<Array<{ id: string; name: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -30,11 +28,8 @@ export default function CreateTransactionPage() {
           stallsApi.getAll()
         ]);
         
-        setUsers(usersData);
-        setStalls(stallsData);
-        
         // Transform data for form options
-        setFormUsers(usersData.map(user => ({ id: user.id, name: user.name })));
+        setFormUsers(usersData.map(user => ({ id: user._id, name: user.name })));
         setFormStalls(stallsData.map(stall => ({ id: stall._id, name: stall.name })));
       } catch (error) {
         console.error('Error fetching data:', error);

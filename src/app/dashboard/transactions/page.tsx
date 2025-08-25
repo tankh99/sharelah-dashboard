@@ -6,7 +6,7 @@ import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Edit, Trash2, Calendar, DollarSign } from 'lucide-react';
-import { Transaction, User, Stall } from '@/lib/types';
+import { Transaction } from '@/lib/types';
 import { transactionsApi, usersApi, stallsApi } from '@/api';
 import { ApiError } from '@/api/utils';
 import { format, parseISO } from 'date-fns';
@@ -14,8 +14,6 @@ import { format, parseISO } from 'date-fns';
 export default function TransactionsPage() {
   const router = useRouter();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const [stalls, setStalls] = useState<Stall[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
 
   // Fetch data on component mount
@@ -23,15 +21,11 @@ export default function TransactionsPage() {
     const fetchData = async () => {
       try {
         setIsLoadingData(true);
-        const [transactionsData, usersData, stallsData] = await Promise.all([
+        const [transactionsData] = await Promise.all([
           transactionsApi.getAll(),
-          usersApi.getAll(),
-          stallsApi.getAll()
         ]);
         
         setTransactions(transactionsData);
-        setUsers(usersData);
-        setStalls(stallsData);
       } catch (error) {
         console.error('Error fetching data:', error);
         if (error instanceof ApiError) {

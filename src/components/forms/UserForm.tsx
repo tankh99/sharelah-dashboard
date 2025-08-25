@@ -6,8 +6,7 @@ import { userSchema, type UserForm } from '@/lib/validations';
 import { Button } from '@/components/ui/button';
 import { FormTextInput } from '@/components/form/form-text-input';
 import { FormSelect } from '@/components/form/form-select';
-import { FormCheckboxes } from '@/components/form/form-checkboxes';
-import { FormCheckbox } from '@/components/form/form-checkbox';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form } from '../ui/form';
 
@@ -19,7 +18,7 @@ interface UserFormProps {
 
 export const UserFormComponent = ({ initialData, onSubmit, isLoading = false }: UserFormProps) => {
   const form = useForm<UserForm>({
-    resolver: zodResolver(userSchema),
+    resolver: zodResolver(userSchema) as any,
     defaultValues: {
       name: '',
       yearOfBirth: new Date().getFullYear(),
@@ -35,29 +34,10 @@ export const UserFormComponent = ({ initialData, onSubmit, isLoading = false }: 
     onSubmit(data);
   };
 
-  const roleOptions = [
-    { value: 'user', label: 'User' },
-    { value: 'admin', label: 'Admin' },
-    { value: 'moderator', label: 'Moderator' },
-  ];
-
   const genderOptions = [
     { value: 'male', label: 'Male' },
     { value: 'female', label: 'Female' },
     { value: 'other', label: 'Other' },
-  ];
-
-  const statusOptions = [
-    { value: 'active', label: 'Active' },
-    { value: 'inactive', label: 'Inactive' },
-    { value: 'suspended', label: 'Suspended' },
-  ];
-
-  const providerOptions = [
-    { value: 'email', label: 'Email' },
-    { value: 'google', label: 'Google' },
-    { value: 'facebook', label: 'Facebook' },
-    { value: 'apple', label: 'Apple' },
   ];
 
   return (
@@ -68,7 +48,7 @@ export const UserFormComponent = ({ initialData, onSubmit, isLoading = false }: 
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(handleSubmit as any)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormTextInput
                 form={form}

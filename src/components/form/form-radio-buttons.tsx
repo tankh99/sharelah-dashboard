@@ -13,7 +13,7 @@ export type FormRadioButtonsProps = FormInputProps & {
   optionLabelKey: string;
   // The string that indexes the object's label and value
   optionValueKey: string;
-  options: Array<any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+  options: Array<any>;
 };
 
 export function FormRadioButtons(props: FormRadioButtonsProps) {
@@ -34,7 +34,7 @@ export function FormRadioButtons(props: FormRadioButtonsProps) {
               onValueChange={(e) => field.onChange(e)}
             >
               {options ?
-                options.map((option, index) => {
+                options.map((option) => {
                   const optionLabel = option[optionLabelKey];
                   const optionValue = option[optionValueKey].toString();
 

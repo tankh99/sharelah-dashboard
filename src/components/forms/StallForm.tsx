@@ -23,8 +23,11 @@ const DEFAULT_CENTER = { lat: 1.3521, lng: 103.8198 };
 const DEFAULT_ZOOM = 13;
 
 // Marker component for the map
-const MapMarker = ({ lat, lng }: { lat: number; lng: number }) => (
-  <div className="w-6 h-6 bg-red-500 rounded-full border-2 border-white shadow-lg transform -translate-x-1/2 -translate-y-1/2 cursor-pointer">
+const MapMarker = ({ lat: _lat, lng: _lng }: { lat: number; lng: number }) => (
+  <div 
+    className="w-6 h-6 bg-red-500 rounded-full border-2 border-white shadow-lg transform -translate-x-1/2 -translate-y-1/2 cursor-pointer"
+    style={{ left: 0, top: 0 }} // This ensures the marker is positioned correctly
+  >
     <div className="w-2 h-2 bg-white rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></div>
   </div>
 );
@@ -42,7 +45,7 @@ export const StallFormComponent = ({ initialData, onSubmit, isLoading = false }:
   const [isGettingLocation, setIsGettingLocation] = useState(false);
 
   const form = useForm<StallForm>({
-    resolver: zodResolver(stallSchema),
+    resolver: zodResolver(stallSchema) as any,
     defaultValues: {
       name: '',
       code: '',
@@ -107,7 +110,7 @@ export const StallFormComponent = ({ initialData, onSubmit, isLoading = false }:
     if (!initialData?.location || (initialData.location[0] === 0 && initialData.location[1] === 0)) {
       getCurrentLocation();
     }
-  }, []); // Empty dependency array means this runs once on mount
+  }, [getCurrentLocation, initialData?.location]); // Include dependencies
 
   const handleSubmit = (data: StallForm) => {
     // Update the form data with current coordinates
@@ -131,7 +134,7 @@ export const StallFormComponent = ({ initialData, onSubmit, isLoading = false }:
       </CardHeader>
       <CardContent>
         <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(handleSubmit as any)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormTextInput
               form={form}
@@ -240,7 +243,7 @@ export const StallFormComponent = ({ initialData, onSubmit, isLoading = false }:
             </div>
             
             <p className="text-xs text-gray-500">
-              Click on the map to set coordinates or use the "Get Current Location" button. 
+              Click on the map to set coordinates or use the &quot;Get Current Location&quot; button. 
               You can also manually enter coordinates below.
             </p>
           </div>

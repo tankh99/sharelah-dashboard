@@ -110,8 +110,7 @@ export default function FileUpload({
     onFileRemove?.(fileId)
   }
 
-  const getFileIcon = (fileName: string) => {
-    const extension = fileName.split('.').pop()?.toLowerCase()
+  const getFileIcon = () => {
     return <File className="h-4 w-4" />
   }
 
@@ -164,7 +163,7 @@ export default function FileUpload({
             <Card key={uploadedFile.id} className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3 flex-1 min-w-0">
-                  {getFileIcon(uploadedFile.file.name)}
+                  {getFileIcon()}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">
                       {uploadedFile.file.name}
