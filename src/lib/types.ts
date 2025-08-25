@@ -1,21 +1,18 @@
 import { StallStatus, UserRole, UserGender, UserStatus } from './enums';
 
 export interface User {
-  id: string;
+  _id: string;
   name: string;
-  dateOfBirth: string;
-  gender: UserGender;
+  yearOfBirth: number;
+  gender: string;
   phoneNumber: string;
   email: string;
-  password: string;
-  verifyPassword: string;
-  roles: UserRole[];
-  deviceId: string;
-  facebookId: string;
-  status: UserStatus;
-  properties: string[];
-  createdAt: Date;
-  updatedAt: Date;
+  provider: string;
+  stripeCustomerId?: string;
+  defaultPassword: boolean;
+  status: string;
+  userRoles: string[];
+  created: Date;
 }
 
 export interface Stall {
@@ -31,14 +28,14 @@ export interface Stall {
 }
 
 export interface Transaction {
-  id: string;
+  _id: string;
   user: User | null;
   stall: Stall | null;
   amount: number;
-  borrowDate: Date | null;
-  returnDate: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
+  borrowDate: string | null;
+  returnDate: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 

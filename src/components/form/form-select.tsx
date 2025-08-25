@@ -52,7 +52,7 @@ export function FormSelect(props: FormSelectInputProps) {
               {...selectProps}
             >
               <FormControl>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder={placeholder} />
                 </SelectTrigger>
               </FormControl>

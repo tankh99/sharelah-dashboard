@@ -1,141 +1,80 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
-import { TransactionFormComponent } from '@/components/forms/TransactionForm';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Edit, Trash2, Calendar, DollarSign } from 'lucide-react';
 import { Transaction, User, Stall } from '@/lib/types';
-import { TransactionForm } from '@/lib/validations';
+import { transactionsApi, usersApi, stallsApi } from '@/api';
+import { ApiError } from '@/api/utils';
+import { format, parseISO } from 'date-fns';
 
 export default function TransactionsPage() {
-  const [transactions, setTransactions] = useState<Transaction[]>([
-    {
-      id: '1',
-      user: {
-        id: '1',
-        name: 'John Doe',
-        dateOfBirth: '1990-01-01',
-        gender: 'male' as any,
-        phoneNumber: '+1234567890',
-        email: 'john@example.com',
-        password: '',
-        verifyPassword: '',
-        roles: ['user' as any],
-        deviceId: 'device123',
-        facebookId: 'fb123',
-        status: 'active' as any,
-        properties: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      stall: {
-        _id: '1',
-        name: 'Central Mall Stall',
-        code: 'CM001',
-        deviceName: 'Device-001',
-        location: { lat: 1.3521, lng: 103.8198 },
-        umbrellaCount: 50,
-        status: 'approved' as any,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      amount: 5.00,
-      borrowDate: new Date('2024-01-15T10:00:00'),
-      returnDate: new Date('2024-01-15T18:00:00'),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-  ]);
+  const router = useRouter();
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [stalls, setStalls] = useState<Stall[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(true);
 
-  const [showForm, setShowForm] = useState(false);
-  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  // Fetch data on component mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoadingData(true);
+        const [transactionsData, usersData, stallsData] = await Promise.all([
+          transactionsApi.getAll(),
+          usersApi.getAll(),
+          stallsApi.getAll()
+        ]);
+        
+        setTransactions(transactionsData);
+        setUsers(usersData);
+        setStalls(stallsData);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        if (error instanceof ApiError) {
+          alert(`Error: ${error.message}`);
+        } else {
+          alert('An unexpected error occurred');
+        }
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
 
-  // Mock data for form options
-  const users: Array<{ id: string; name: string }> = [
-    { id: '1', name: 'John Doe' },
-    { id: '2', name: 'Jane Smith' },
-  ];
+    fetchData();
+  }, []);
 
-  const stalls: Array<{ id: string; name: string }> = [
-    { id: '1', name: 'Central Mall Stall' },
-    { id: '2', name: 'Orchard Road Kiosk' },
-  ];
-
-  const handleCreateTransaction = (data: TransactionForm) => {
-    setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      const newTransaction: Transaction = {
-        ...data,
-        id: Date.now().toString(),
-        user: users.find(u => u.id === data.user) || null,
-        stall: stalls.find(s => s.id === data.stall) || null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      } as Transaction;
-      
-      setTransactions(prev => [...prev, newTransaction]);
-      setShowForm(false);
-      setIsLoading(false);
-    }, 1000);
-  };
-
-  const handleUpdateTransaction = (data: TransactionForm) => {
-    if (!editingTransaction) return;
-    
-    setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setTransactions(prev => prev.map(transaction => 
-        transaction.id === editingTransaction.id 
-          ? { 
-              ...transaction, 
-              ...data,
-              user: users.find(u => u.id === data.user) || null,
-              stall: stalls.find(s => s.id === data.stall) || null,
-              updatedAt: new Date() 
-            }
-          : transaction
-      ));
-      setEditingTransaction(null);
-      setIsLoading(false);
-    }, 1000);
-  };
-
-  const handleDeleteTransaction = (transactionId: string) => {
+  const handleDeleteTransaction = async (transactionId: string) => {
     if (confirm('Are you sure you want to delete this transaction?')) {
-      setTransactions(prev => prev.filter(transaction => transaction.id !== transactionId));
+      try {
+        await transactionsApi.delete(transactionId);
+        setTransactions(prev => prev.filter(transaction => transaction._id !== transactionId));
+      } catch (error) {
+        console.error('Error deleting transaction:', error);
+        if (error instanceof ApiError) {
+          alert(`Error: ${error.message}`);
+        } else {
+          alert('An unexpected error occurred');
+        }
+      }
     }
   };
 
   const handleEdit = (transaction: Transaction) => {
-    setEditingTransaction({
-      user: transaction.user?.id || null,
-      stall: transaction.stall?._id || null,
-      amount: transaction.amount,
-      borrowDate: transaction.borrowDate,
-      returnDate: transaction.returnDate,
-    });
-    setShowForm(true);
+    router.push(`/dashboard/transactions/${transaction._id}/edit`);
   };
 
-  const handleCancel = () => {
-    setShowForm(false);
-    setEditingTransaction(null);
+  const handleCreate = () => {
+    router.push('/dashboard/transactions/create');
   };
 
-  const formatDate = (date: Date | null) => {
+  const formatDate = (date: string) => {
     if (!date) return 'Not set';
-    return new Intl.DateTimeFormat('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(date);
+    const formatted = format(parseISO(date), "PPpp"); 
+    return formatted
   };
 
   const formatAmount = (amount: number) => {
@@ -145,6 +84,19 @@ export default function TransactionsPage() {
     }).format(amount);
   };
 
+  if (isLoadingData) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading transactions...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -153,44 +105,23 @@ export default function TransactionsPage() {
             <h1 className="text-2xl font-bold text-gray-900">Transactions</h1>
             <p className="text-gray-600">Manage umbrella rental transactions</p>
           </div>
-          <Button onClick={() => setShowForm(true)}>
+          <Button onClick={handleCreate}>
             <Plus className="h-4 w-4 mr-2" />
             Add Transaction
           </Button>
         </div>
 
-        {showForm ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                {editingTransaction ? 'Edit Transaction' : 'Create New Transaction'}
-              </CardTitle>
-              <CardDescription>
-                {editingTransaction ? 'Update transaction information' : 'Add a new transaction to the system'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <TransactionFormComponent
-                initialData={editingTransaction || undefined}
-                onSubmit={editingTransaction ? handleUpdateTransaction : handleCreateTransaction}
-                isLoading={isLoading}
-                users={users}
-                stalls={stalls}
-              />
-              <div className="mt-4">
-                <Button variant="outline" onClick={handleCancel}>
-                  Cancel
-                </Button>
+        <Card>
+          <CardHeader>
+            <CardTitle>Transaction List</CardTitle>
+            <CardDescription>All umbrella rental transactions in the system</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {transactions.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No transactions found</p>
               </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle>Transaction List</CardTitle>
-              <CardDescription>All umbrella rental transactions in the system</CardDescription>
-            </CardHeader>
-            <CardContent>
+            ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
@@ -217,7 +148,7 @@ export default function TransactionsPage() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {transactions.map((transaction) => (
-                      <tr key={transaction.id}>
+                      <tr key={transaction._id}>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="h-10 w-10 rounded-full bg-green-200 flex items-center justify-center">
@@ -225,7 +156,7 @@ export default function TransactionsPage() {
                             </div>
                             <div className="ml-4">
                               <div className="text-sm font-medium text-gray-900">
-                                #{transaction.id}
+                                #{transaction._id}
                               </div>
                               <div className="text-sm text-gray-500">
                                 {formatDate(transaction.createdAt)}
@@ -258,11 +189,11 @@ export default function TransactionsPage() {
                           <div className="text-sm text-gray-900">
                             <div className="flex items-center">
                               <Calendar className="h-4 w-4 text-gray-400 mr-1" />
-                              Borrow: {formatDate(transaction.borrowDate)}
+                              Borrow: {transaction.borrowDate ? formatDate(transaction.borrowDate) : 'Not set'}
                             </div>
                           </div>
                           <div className="text-sm text-gray-500">
-                            Return: {formatDate(transaction.returnDate)}
+                            Return: {transaction.returnDate ? formatDate(transaction.returnDate) : 'Not set'}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -277,7 +208,7 @@ export default function TransactionsPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleDeleteTransaction(transaction.id)}
+                              onClick={() => handleDeleteTransaction(transaction._id)}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -288,9 +219,9 @@ export default function TransactionsPage() {
                   </tbody>
                 </table>
               </div>
-            </CardContent>
-          </Card>
-        )}
+            )}
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   );

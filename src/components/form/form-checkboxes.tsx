@@ -35,6 +35,7 @@ export function FormCheckboxes(props: FormCheckboxesProps) {
     withOthers,
   } = props;
 
+
   return (
     <FormField
       control={form.control}
@@ -58,25 +59,19 @@ export function FormCheckboxes(props: FormCheckboxesProps) {
                     return (
                       <div key={option[optionLabelKey]} className="flex space-x-2">
                         <Checkbox
-                          checked={field.value?.some(
-                            (opt: any) => opt[optionValueKey] === optionValue,
-                          )}
+                          checked={field.value?.includes(optionValue)}
                           id={id}
                           onCheckedChange={(checked) => {
                             if (checked) {
                               // if checked, add it to the value array
                               field.onChange(
-                                field.value?.concat({
-                                  [optionValueKey]: optionValue,
-                                  isOption: true,
-                                  [optionLabelKey]: optionLabel,
-                                }),
+                                field.value?.concat(optionValue),
                               );
                             } else {
                               // if unchecked, remove it from the value array
                               field.onChange(
                                 field.value.filter((opt: any) => {
-                                  return opt[optionValueKey] !== optionValue;
+                                  return opt !== optionValue;
                                 }),
                               );
                             }

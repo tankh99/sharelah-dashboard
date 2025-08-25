@@ -8,26 +8,16 @@ export type StallForm = z.infer<typeof stallSchema>;
 export type TransactionForm = z.infer<typeof transactionSchema>;
 
 export const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: z.email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
 export const userSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
-  dateOfBirth: z.string().min(1, 'Date of birth is required'),
-  gender: z.enum(UserGender),
-  phoneNumber: z.string().min(10, 'Phone number must be at least 10 characters'),
+  yearOfBirth: z.coerce.number().min(1900, 'Year of birth is required'),
+  gender: z.string().min(1, 'Gender is required'),
+  phoneNumber: z.string().min(8, 'Phone number must be at least 8 characters'),
   email: z.email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  verifyPassword: z.string().min(6, 'Password must be at least 6 characters'),
-  roles: z.array(z.enum(UserRole)).min(1, 'At least one role must be selected'),
-  deviceId: z.string().optional(),
-  facebookId: z.string().optional(),
-  status: z.enum(UserStatus),
-  properties: z.array(z.string()),
-}).refine((data) => data.password === data.verifyPassword, {
-  message: "Passwords don't match",
-  path: ["verifyPassword"],
 });
 
 export const stallSchema = z.object({
@@ -38,7 +28,7 @@ export const stallSchema = z.object({
     .refine((coords) => coords[0] >= -90 && coords[0] <= 90, 'Latitude must be between -90 and 90')
     .refine((coords) => coords[1] >= -180 && coords[1] <= 180, 'Longitude must be between -180 and 180'),
   umbrellaCount: z.coerce.number().min(0, 'Umbrella count must be 0 or greater'),
-  status: z.nativeEnum(StallStatus),
+  status: z.enum(StallStatus),
 });
 
 export const transactionSchema = z.object({

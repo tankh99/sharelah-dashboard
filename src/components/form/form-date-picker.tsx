@@ -2,14 +2,13 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@radix-ui/react-popover";
+} from "@/components/ui/popover";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
-import type { CalendarProps } from "@/components/ui/calendar";
 import { Calendar } from "@/components/ui/calendar";
 import {
   FormControl,
@@ -21,10 +20,9 @@ import {
 } from "@/components/ui/form";
 
 import type { FormInputProps } from "./form-types";
-import { DobCalendar } from "../ui/dob-calendar";
 
 type FormDateInputProps = FormInputProps & {
-  calendarProps?: CalendarProps;
+  calendarProps?: any;
   description?: string;
 };
 
@@ -64,16 +62,13 @@ export function FormDatePicker(props: FormDateInputProps) {
               </PopoverTrigger>
               <PopoverContent align="start" className="w-auto p-0 bg-white">
                 {/* Code reference: https://github.com/Medaillek/shadcn-ui-date-picker/blob/main/DatePicker.tsx */}
-                <DobCalendar
-                  fromYear={new Date().getFullYear() - 100} // min date = 100 years ago
-                  toDate={new Date(Date.now())} // max date: today
+                <Calendar
                   onSelect={field.onChange}
                   fixedWeeks // Helps prevent layout shifting when navigating between months
                   defaultMonth={value}
                   month={value}
                   onMonthChange={field.onChange}
                   captionLayout="dropdown-buttons"
-                  initialFocus={true}
                   mode="single" // Defaults to single, but can be overridden
                   selected={value}
                   {...calendarProps}

@@ -3,12 +3,11 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { userSchema, type UserForm } from '@/lib/validations';
-import { UserRole, UserGender, UserStatus } from '@/lib/enums';
 import { Button } from '@/components/ui/button';
 import { FormTextInput } from '@/components/form/form-text-input';
 import { FormSelect } from '@/components/form/form-select';
-import { FormDatePicker } from '@/components/form/form-date-picker';
 import { FormCheckboxes } from '@/components/form/form-checkboxes';
+import { FormCheckbox } from '@/components/form/form-checkbox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form } from '../ui/form';
 
@@ -23,39 +22,43 @@ export const UserFormComponent = ({ initialData, onSubmit, isLoading = false }: 
     resolver: zodResolver(userSchema),
     defaultValues: {
       name: '',
-      dateOfBirth: '',
-      gender: UserGender.MALE,
+      yearOfBirth: new Date().getFullYear(),
+      gender: 'male',
       phoneNumber: '',
       email: '',
-      password: '',
-      verifyPassword: '',
-      roles: [UserRole.USER],
-      deviceId: '',
-      facebookId: '',
-      status: UserStatus.ACTIVE,
-      properties: [],
       ...initialData,
     },
   });
 
   const handleSubmit = (data: UserForm) => {
+    console.log(data)
     onSubmit(data);
   };
 
-  const roleOptions = Object.values(UserRole).map(role => ({
-    value: role,
-    label: role.charAt(0).toUpperCase() + role.slice(1),
-  }));
+  const roleOptions = [
+    { value: 'user', label: 'User' },
+    { value: 'admin', label: 'Admin' },
+    { value: 'moderator', label: 'Moderator' },
+  ];
 
-  const genderOptions = Object.values(UserGender).map(gender => ({
-    value: gender,
-    label: gender.charAt(0).toUpperCase() + gender.slice(1),
-  }));
+  const genderOptions = [
+    { value: 'male', label: 'Male' },
+    { value: 'female', label: 'Female' },
+    { value: 'other', label: 'Other' },
+  ];
 
-  const statusOptions = Object.values(UserStatus).map(status => ({
-    value: status,
-    label: status.charAt(0).toUpperCase() + status.slice(1),
-  }));
+  const statusOptions = [
+    { value: 'active', label: 'Active' },
+    { value: 'inactive', label: 'Inactive' },
+    { value: 'suspended', label: 'Suspended' },
+  ];
+
+  const providerOptions = [
+    { value: 'email', label: 'Email' },
+    { value: 'google', label: 'Google' },
+    { value: 'facebook', label: 'Facebook' },
+    { value: 'apple', label: 'Apple' },
+  ];
 
   return (
     <Card>
@@ -74,10 +77,12 @@ export const UserFormComponent = ({ initialData, onSubmit, isLoading = false }: 
                 placeholder="Enter full name"
               />
               
-              <FormDatePicker
+              <FormTextInput
                 form={form}
-                name="dateOfBirth"
-                label="Date of Birth"
+                name="yearOfBirth"
+                label="Year of Birth"
+                type="number"
+                placeholder="e.g., 1990"
               />
               
               <FormSelect
@@ -104,59 +109,9 @@ export const UserFormComponent = ({ initialData, onSubmit, isLoading = false }: 
                 type="email"
               />
               
-              <FormSelect
-                form={form}
-                name="status"
-                label="Status"
-                options={statusOptions}
-                optionLabelKey="label"
-                optionValueKey="value"
-              />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormTextInput
-                form={form}
-                name="password"
-                label="Password"
-                placeholder="Enter password"
-                type="password"
-              />
-              
-              <FormTextInput
-                form={form}
-                name="verifyPassword"
-                label="Verify Password"
-                placeholder="Confirm password"
-                type="password"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormTextInput
-                form={form}
-                name="deviceId"
-                label="Device ID"
-                placeholder="Enter device ID (optional)"
-              />
-              
-              <FormTextInput
-                form={form}
-                name="facebookId"
-                label="Facebook ID"
-                placeholder="Enter Facebook ID (optional)"
-              />
-            </div>
-
-            <FormCheckboxes
-              form={form}
-              name="roles"
-              label="Roles"
-              options={roleOptions}
-              optionLabelKey="label"
-              optionValueKey="value"
-            />
-
+    
             <div className="flex justify-end space-x-4">
               <Button type="button" variant="outline" onClick={() => form.reset()}>
                 Reset
