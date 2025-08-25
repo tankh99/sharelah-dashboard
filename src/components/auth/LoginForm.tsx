@@ -9,9 +9,11 @@ import { Button } from '@/components/ui/button';
 import { FormTextInput } from '@/components/form/form-text-input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form } from '../ui/form';
+import { useRouter } from 'next/navigation';
 
 export const LoginFormComponent = () => {
   const { login } = useAuth();
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -29,11 +31,21 @@ export const LoginFormComponent = () => {
 
     try {
       const success = await login(data.email, data.password);
-      if (!success) {
+      if (success) {
+        // Redirect to dashboard on successful login
+        router.push('/dashboard');
+      } else {
         setError('Invalid email or password');
       }
-    } catch (err) {
-      setError('An error occurred during login');
+    } catch (err: any) {
+      // Handle API errors
+      if (err.status === 401) {
+        setError('Invalid email or password');
+      } else if (err.status === 500) {
+        setError('Server error. Please try again later.');
+      } else {
+        setError(err.message || 'An error occurred during login');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -44,10 +56,10 @@ export const LoginFormComponent = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold text-gray-900">
-            Sign in to your account
+            Admin Dashboard Login
           </CardTitle>
           <CardDescription>
-            Enter your credentials to access the dashboard
+            Enter your credentials to access the admin dashboard
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -67,10 +79,14 @@ export const LoginFormComponent = () => {
                 label="Password"
                 placeholder="Enter your password"
                 type="password"
+                inputProps={{
+                  autoComplete: "current-password",
+                  type: "password"
+                }}
               />
 
               {error && (
-                <div className="text-red-600 text-sm text-center">
+                <div className="text-red-600 text-sm text-center bg-red-50 p-3 rounded-md">
                   {error}
                 </div>
               )}
@@ -82,12 +98,6 @@ export const LoginFormComponent = () => {
               >
                 {isLoading ? 'Signing in...' : 'Sign in'}
               </Button>
-
-              <div className="text-center text-sm text-gray-600">
-                <p>Demo credentials:</p>
-                <p>Email: admin@example.com</p>
-                <p>Password: password</p>
-              </div>
             </form>
           </Form>
         </CardContent>
@@ -95,3 +105,4 @@ export const LoginFormComponent = () => {
     </div>
   );
 };
+

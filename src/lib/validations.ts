@@ -34,11 +34,10 @@ export const stallSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   code: z.string().min(2, 'Code must be at least 2 characters'),
   deviceName: z.string().min(2, 'Device name must be at least 2 characters'),
-  location: z.object({
-    lat: z.number().min(-90).max(90, 'Latitude must be between -90 and 90'),
-    lng: z.number().min(-180).max(180, 'Longitude must be between -180 and 180'),
-  }),
-  umbrellaCount: z.number().min(0, 'Umbrella count must be 0 or greater'),
+  location: z.array(z.coerce.number()).length(2, 'Location must be an array with exactly 2 numbers [lat, lng]')
+    .refine((coords) => coords[0] >= -90 && coords[0] <= 90, 'Latitude must be between -90 and 90')
+    .refine((coords) => coords[1] >= -180 && coords[1] <= 180, 'Longitude must be between -180 and 180'),
+  umbrellaCount: z.coerce.number().min(0, 'Umbrella count must be 0 or greater'),
   status: z.nativeEnum(StallStatus),
 });
 

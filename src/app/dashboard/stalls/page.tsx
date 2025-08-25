@@ -1,111 +1,89 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
-import { StallFormComponent } from '@/components/forms/StallForm';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Edit, Trash2, MapPin, Store } from 'lucide-react';
 import { Stall } from '@/lib/types';
-import { StallForm } from '@/lib/validations';
 import { StallStatus } from '@/lib/enums';
+import { stallsApi, ApiError } from '@/api';
 
 export default function StallsPage() {
-  const [stalls, setStalls] = useState<Stall[]>([
-    {
-      id: '1',
-      name: 'Central Mall Stall',
-      code: 'CM001',
-      deviceName: 'Device-001',
-      location: { lat: 1.3521, lng: 103.8198 },
-      umbrellaCount: 50,
-      status: StallStatus.APPROVED,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-    {
-      id: '2',
-      name: 'Orchard Road Kiosk',
-      code: 'OR002',
-      deviceName: 'Device-002',
-      location: { lat: 1.3048, lng: 103.8318 },
-      umbrellaCount: 30,
-      status: StallStatus.APPROVED,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-  ]);
-
-  const [showForm, setShowForm] = useState(false);
-  const [editingStall, setEditingStall] = useState<Stall | null>(null);
+  const router = useRouter();
+  const [stalls, setStalls] = useState<Stall[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleCreateStall = (data: StallForm) => {
-    setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      const newStall: Stall = {
-        ...data,
-        id: Date.now().toString(),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      } as Stall;
-      
-      setStalls(prev => [...prev, newStall]);
-      setShowForm(false);
+  // Fetch stalls on component mount
+  useEffect(() => {
+    fetchStalls();
+  }, []);
+
+  const fetchStalls = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const fetchedStalls = await stallsApi.getAll();
+      setStalls(fetchedStalls);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError('Failed to fetch stalls');
+      }
+      console.error('Error fetching stalls:', err);
+    } finally {
       setIsLoading(false);
-    }, 1000);
-  };
-
-  const handleUpdateStall = (data: StallForm) => {
-    if (!editingStall) return;
-    
-    setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setStalls(prev => prev.map(stall => 
-        stall.id === editingStall.id 
-          ? { ...stall, ...data, updatedAt: new Date() }
-          : stall
-      ));
-      setEditingStall(null);
-      setIsLoading(false);
-    }, 1000);
-  };
-
-  const handleDeleteStall = (stallId: string) => {
-    if (confirm('Are you sure you want to delete this stall?')) {
-      setStalls(prev => prev.filter(stall => stall.id !== stallId));
     }
   };
 
-  const handleEdit = (stall: Stall) => {
-    setEditingStall(stall);
-    setShowForm(true);
+  const handleDeleteStall = async (stallId: string) => {
+    if (confirm('Are you sure you want to delete this stall?')) {
+      try {
+        setIsLoading(true);
+        setError(null);
+        await stallsApi.delete(stallId);
+        setStalls(prev => prev.filter(stall => stall._id !== stallId));
+      } catch (err) {
+        if (err instanceof ApiError) {
+          setError(err.message);
+        } else {
+          setError('Failed to delete stall');
+        }
+        console.error('Error deleting stall:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
   };
 
-  const handleCancel = () => {
-    setShowForm(false);
-    setEditingStall(null);
+  const handleCreateStall = () => {
+    router.push('/dashboard/stalls/create');
+  };
+
+  const handleEdit = (stall: Stall) => {
+    router.push(`/dashboard/stalls/${stall._id}/edit`);
   };
 
   const getStatusBadge = (status: StallStatus) => (
     <span
-      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-        status === StallStatus.APPROVED
+      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${status === StallStatus.APPROVED
           ? 'bg-green-100 text-green-800'
           : status === StallStatus.DRAFT
-          ? 'bg-yellow-100 text-yellow-800'
-          : 'bg-red-100 text-red-800'
-      }`}
+            ? 'bg-yellow-100 text-yellow-800'
+            : 'bg-red-100 text-red-800'
+        }`}
     >
       {status}
     </span>
   );
 
-  const formatCoordinates = (location: { lat: number; lng: number }) => {
-    return `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`;
+  const formatCoordinates = (location: number[]) => {
+    return `${location[0].toFixed(4)}, ${location[1].toFixed(4)}`;
   };
+
 
   return (
     <DashboardLayout>
@@ -115,123 +93,121 @@ export default function StallsPage() {
             <h1 className="text-2xl font-bold text-gray-900">Stalls</h1>
             <p className="text-gray-600">Manage umbrella rental stalls and locations</p>
           </div>
-          <Button onClick={() => setShowForm(true)}>
+          <Button onClick={handleCreateStall}>
             <Plus className="h-4 w-4 mr-2" />
             Add Stall
           </Button>
         </div>
 
-        {showForm ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                {editingStall ? 'Edit Stall' : 'Create New Stall'}
-              </CardTitle>
-              <CardDescription>
-                {editingStall ? 'Update stall information' : 'Add a new stall to the system'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <StallFormComponent
-                initialData={editingStall || undefined}
-                onSubmit={editingStall ? handleUpdateStall : handleCreateStall}
-                isLoading={isLoading}
-              />
-              <div className="mt-4">
-                <Button variant="outline" onClick={handleCancel}>
-                  Cancel
-                </Button>
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-md p-4">
+            <div className="flex">
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">Error</h3>
+                <div className="mt-2 text-sm text-red-700">{error}</div>
               </div>
-            </CardContent>
-          </Card>
-        ) : (
+            </div>
+          </div>
+        )}
+
+        <Card>
           <Card>
             <CardHeader>
               <CardTitle>Stall List</CardTitle>
               <CardDescription>All umbrella rental stalls in the system</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Stall
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Device
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Location
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Umbrellas
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {stalls.map((stall) => (
-                      <tr key={stall.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="h-10 w-10 rounded-full bg-blue-200 flex items-center justify-center">
-                              <Store className="h-5 w-5 text-blue-600" />
-                            </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{stall.name}</div>
-                              <div className="text-sm text-gray-500">{stall.code}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{stall.deviceName}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <MapPin className="h-4 w-4 text-gray-400 mr-1" />
-                            <span className="text-sm text-gray-900">
-                              {formatCoordinates(stall.location)}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{stall.umbrellaCount}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {getStatusBadge(stall.status)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex space-x-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEdit(stall)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteStall(stall.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </td>
+            <CardContent className=''>
+              {isLoading ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="text-gray-500">Loading stalls...</div>
+                </div>
+              ) : stalls.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="text-gray-500">No stalls found</div>
+                </div>
+              ) : (
+                <div className="overflow-auto max-h-[480px]">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Stall
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Device
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Location
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Umbrellas
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {stalls.map((stall) => (
+                        <tr key={stall._id}>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="h-10 w-10 rounded-full bg-blue-200 flex items-center justify-center">
+                                <Store className="h-5 w-5 text-blue-600" />
+                              </div>
+                              <div className="ml-4">
+                                <div className="text-sm font-medium text-gray-900">{stall.name}</div>
+                                <div className="text-sm text-gray-500">{stall.code}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">{stall.deviceName}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <MapPin className="h-4 w-4 text-gray-400 mr-1" />
+                              <span className="text-sm text-gray-900">
+                                {formatCoordinates(stall.location)}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">{stall.umbrellaCount}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {getStatusBadge(stall.status)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div className="flex space-x-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEdit(stall)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteStall(stall._id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </CardContent>
           </Card>
-        )}
+        </Card>
       </div>
     </DashboardLayout>
   );

@@ -19,14 +19,11 @@ export interface User {
 }
 
 export interface Stall {
-  id: string;
+  _id: string;
   name: string;
   code: string;
   deviceName: string;
-  location: {
-    lat: number;
-    lng: number;
-  };
+  location: number[]
   umbrellaCount: number;
   status: StallStatus;
   createdAt: Date;

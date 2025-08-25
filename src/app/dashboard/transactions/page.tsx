@@ -31,7 +31,7 @@ export default function TransactionsPage() {
         updatedAt: new Date(),
       },
       stall: {
-        id: '1',
+        _id: '1',
         name: 'Central Mall Stall',
         code: 'CM001',
         deviceName: 'Device-001',
@@ -114,7 +114,7 @@ export default function TransactionsPage() {
   const handleEdit = (transaction: Transaction) => {
     setEditingTransaction({
       user: transaction.user?.id || null,
-      stall: transaction.stall?.id || null,
+      stall: transaction.stall?._id || null,
       amount: transaction.amount,
       borrowDate: transaction.borrowDate,
       returnDate: transaction.returnDate,

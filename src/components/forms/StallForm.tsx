@@ -18,10 +18,10 @@ interface StallFormProps {
 }
 
 export const StallFormComponent = ({ initialData, onSubmit, isLoading = false }: StallFormProps) => {
-  const [coordinates, setCoordinates] = useState({
-    lat: initialData?.location?.lat || 0,
-    lng: initialData?.location?.lng || 0,
-  });
+  const [coordinates, setCoordinates] = useState([
+    initialData?.location?.[0] || 0,
+    initialData?.location?.[1] || 0,
+  ]);
 
   const form = useForm<StallForm>({
     resolver: zodResolver(stallSchema),
@@ -29,7 +29,7 @@ export const StallFormComponent = ({ initialData, onSubmit, isLoading = false }:
       name: '',
       code: '',
       deviceName: '',
-      location: { lat: 0, lng: 0 },
+      location: [0, 0], // [lat, lng]
       umbrellaCount: 0,
       status: StallStatus.DRAFT,
       ...initialData,
@@ -98,6 +98,9 @@ export const StallFormComponent = ({ initialData, onSubmit, isLoading = false }:
               label="Umbrella Count"
               placeholder="Enter umbrella count"
               type="number"
+              inputProps={{
+                type: "number"
+              }}
             />
           </div>
 
@@ -109,8 +112,8 @@ export const StallFormComponent = ({ initialData, onSubmit, isLoading = false }:
                 <input
                   type="number"
                   step="any"
-                  value={coordinates.lat}
-                  onChange={(e) => setCoordinates(prev => ({ ...prev, lat: parseFloat(e.target.value) || 0 }))}
+                  value={coordinates[0]}
+                  onChange={(e) => setCoordinates(prev => [parseFloat(e.target.value) || 0, prev[1]])}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Latitude"
                 />
@@ -120,8 +123,8 @@ export const StallFormComponent = ({ initialData, onSubmit, isLoading = false }:
                 <input
                   type="number"
                   step="any"
-                  value={coordinates.lng}
-                  onChange={(e) => setCoordinates(prev => ({ ...prev, lng: parseFloat(e.target.value) || 0 }))}
+                  value={coordinates[1]}
+                  onChange={(e) => setCoordinates(prev => [prev[0], parseFloat(e.target.value) || 0])}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Longitude"
                 />

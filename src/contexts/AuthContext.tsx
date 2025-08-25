@@ -2,7 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@/lib/types';
-import { LoginForm } from '@/lib/validations';
+import { authApi, LoginCredentials } from '@/api/auth';
+import { mapBackendUserToFrontend } from '@/utils/auth';
 
 interface AuthContextType {
   user: User | null;
@@ -30,43 +31,63 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is logged in from localStorage
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
+    // Check if user is logged in by calling the API
+    const checkAuthStatus = async () => {
       try {
-        setUser(JSON.parse(savedUser));
+        // First, try to get user from localStorage for immediate UI response
+        const savedUser = localStorage.getItem('user');
+        if (savedUser) {
+          try {
+            const parsedUser = JSON.parse(savedUser);
+            setUser(parsedUser);
+          } catch (error) {
+            console.error('Error parsing saved user:', error);
+            localStorage.removeItem('user');
+          }
+        }
+
+        // Then verify with the API
+        const apiUser = await authApi.getProfile();
+        if (apiUser) {
+          setUser(apiUser);
+          // Update localStorage with fresh data
+          localStorage.setItem('user', JSON.stringify(apiUser));
+        } else if (savedUser) {
+          // API says no user, but we had one in localStorage - clear it
+          setUser(null);
+          localStorage.removeItem('user');
+          localStorage.removeItem('token');
+        }
       } catch (error) {
-        console.error('Error parsing saved user:', error);
+        console.error('Error checking auth status:', error);
+        // If API call fails, clear any stored data
+        setUser(null);
         localStorage.removeItem('user');
+        localStorage.removeItem('token');
+      } finally {
+        setIsLoading(false);
       }
-    }
-    setIsLoading(false);
+    };
+
+    checkAuthStatus();
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      // Simulate API call - replace with actual authentication
-      if (email === 'admin@example.com' && password === 'password') {
-        const mockUser: User = {
-          id: '1',
-          name: 'Admin User',
-          dateOfBirth: '1990-01-01',
-          gender: 'male' as any,
-          phoneNumber: '+1234567890',
-          email: 'admin@example.com',
-          password: '',
-          verifyPassword: '',
-          roles: ['admin' as any],
-          deviceId: '',
-          facebookId: '',
-          status: 'active' as any,
-          properties: [],
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
+      const credentials: LoginCredentials = { email, password };
+      const response = await authApi.login(credentials);
+      
+      if (response && response.accessToken) {
+        // Map backend user to frontend user
+        const frontendUser = mapBackendUserToFrontend(response);
+        setUser(frontendUser);
         
-        setUser(mockUser);
-        localStorage.setItem('user', JSON.stringify(mockUser));
+        // Store user data in localStorage for persistence
+        localStorage.setItem('user', JSON.stringify(frontendUser));
+        
+        // Store access token
+        localStorage.setItem('token', response.accessToken);
+        
         return true;
       }
       return false;
@@ -79,6 +100,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    
+    // Call the logout API method
+    authApi.logout();
   };
 
   const value = {

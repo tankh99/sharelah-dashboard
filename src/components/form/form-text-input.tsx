@@ -49,6 +49,7 @@ export function FormTextInput(props: FormTextInputProps) {
               ) : (
                 <Input
                   placeholder={placeholder}
+                  type={type}
                   {...field}
                   {...inputProps}
                 />
