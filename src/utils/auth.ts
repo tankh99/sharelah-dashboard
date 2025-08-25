@@ -1,6 +1,7 @@
 import { User } from '@/lib/types';
 import { BackendUser } from '@/api/auth';
 import { UserRole, UserGender, UserStatus } from '@/lib/enums';
+import { getUserRolesFromToken, getUserIdFromToken, getUserEmailFromToken } from './jwt';
 
 /**
  * Maps backend user response to frontend User type
@@ -8,8 +9,19 @@ import { UserRole, UserGender, UserStatus } from '@/lib/enums';
  * the frontend User interface, handling field name differences and type conversions.
  */
 export const mapBackendUserToFrontend = (backendUser: BackendUser): User => {
-  // Map userRoles to roles - assuming the first role is the primary one
-  const roles: UserRole[] = backendUser.userRoles.length > 0 ? [UserRole.ADMIN] : [UserRole.USER];
+  // Map userRoles to roles - properly check if user has admin role
+  const roles: UserRole[] = backendUser.userRoles.map(role => {
+    switch (role.toLowerCase()) {
+      case 'admin':
+        return UserRole.ADMIN;
+      case 'moderator':
+        return UserRole.MODERATOR;
+      case 'user':
+        return UserRole.USER;
+      default:
+        return UserRole.USER;
+    }
+  });
 
   // Map gender
   let gender: UserGender;
@@ -45,8 +57,52 @@ export const mapBackendUserToFrontend = (backendUser: BackendUser): User => {
     email: backendUser.email,
     yearOfBirth: 0,
     created: new Date(),
-    userRoles: backendUser.userRoles
+    userRoles: roles
   };
+};
+
+/**
+ * Gets user info from stored JWT token
+ */
+export const getUserFromToken = (): User | null => {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+
+    const roles = getUserRolesFromToken(token);
+    const userId = getUserIdFromToken(token);
+    const email = getUserEmailFromToken(token);
+
+    if (!userId || !email) return null;
+
+    // Map roles to UserRole enum
+    const userRoles: UserRole[] = roles.map(role => {
+      switch (role.toLowerCase()) {
+        case 'admin':
+          return UserRole.ADMIN;
+        case 'moderator':
+          return UserRole.MODERATOR;
+        case 'user':
+          return UserRole.USER;
+        default:
+          return UserRole.USER;
+      }
+    });
+
+    return {
+      _id: userId,
+      name: email.split('@')[0], // Use email prefix as name fallback
+      gender: '',
+      phoneNumber: '',
+      email,
+      yearOfBirth: 0,
+      created: new Date(),
+      userRoles
+    };
+  } catch (error) {
+    console.error('Error getting user from token:', error);
+    return null;
+  }
 };
 
 /**
@@ -67,7 +123,14 @@ export const isModerator = (user: User | null): boolean => {
  * Checks if a user has any of the specified roles
  */
 export const hasRole = (user: User | null, roles: UserRole[]): boolean => {
-  return user?.userRoles.some(role => roles.includes(role as UserRole)) ?? false;
+  return user?.userRoles.some(role => roles.includes(role)) ?? false;
+};
+
+/**
+ * Checks if a user has admin access (either admin or moderator role)
+ */
+export const hasAdminAccess = (user: User | null): boolean => {
+  return hasRole(user, [UserRole.ADMIN, UserRole.MODERATOR]);
 };
 
 /**

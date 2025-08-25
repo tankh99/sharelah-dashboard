@@ -1,4 +1,4 @@
-import { StallStatus } from './enums';
+import { StallStatus, UserRole } from './enums';
 
 export interface User {
   _id: string;
@@ -8,7 +8,7 @@ export interface User {
   phoneNumber: string;
   email: string;
   created: Date;
-  userRoles: string[]
+  userRoles: UserRole[]
 }
 
 export interface Stall {

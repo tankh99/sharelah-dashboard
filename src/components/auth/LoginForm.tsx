@@ -30,22 +30,17 @@ export const LoginFormComponent = () => {
     setError('');
 
     try {
-      const success = await login(data.email, data.password);
-      if (success) {
+      const result = await login(data.email, data.password);
+      if (result.success) {
         // Redirect to dashboard on successful login
         router.push('/dashboard');
       } else {
-        setError('Invalid email or password');
+        setError(result.error || 'Login failed');
       }
     } catch (err: any) {
-      // Handle API errors
-      if (err.status === 401) {
-        setError('Invalid email or password');
-      } else if (err.status === 500) {
-        setError('Server error. Please try again later.');
-      } else {
-        setError(err.message || 'An error occurred during login');
-      }
+      // Handle unexpected errors
+      console.error('Unexpected login error:', err);
+      setError('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
