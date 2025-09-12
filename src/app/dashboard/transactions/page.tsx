@@ -11,6 +11,7 @@ import { Transaction } from '@/lib/types';
 import { transactionsApi } from '@/api';
 import { ApiError } from '@/api/utils';
 import { format, parseISO } from 'date-fns';
+import { formatAmount } from '@/utils';
 
 export default function TransactionsPage() {
   const router = useRouter();
@@ -128,12 +129,6 @@ export default function TransactionsPage() {
     return formatted
   };
 
-  const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
-  };
 
   if (isLoadingData) {
     return (
@@ -297,7 +292,7 @@ export default function TransactionsPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-medium text-gray-900">
-                            {formatAmount(transaction.amount / 100)}
+                            {formatAmount(transaction.amount)}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">

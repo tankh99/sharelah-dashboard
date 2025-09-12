@@ -1,16 +1,19 @@
 "use client";
 
-import { usersApi } from '@/api';
+import { transactionsApi, usersApi } from '@/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { User } from '@/lib/types';
-import { formatTimeAgo } from '@/utils';
+import { Transaction, User } from '@/lib/types';
+import { formatAmount, formatTimeAgo } from '@/utils';
 import { Users, Store, CreditCard, TrendingUp } from 'lucide-react';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 export default function DashboardPage() {
 
   const [latestUsers, setLatestUsers] = useState<User[]>([]);
+  const [latestTransactions, setLatestTransactions] = useState<Transaction[]>([]);
   // Mock data - replace with actual API calls
   const stats = [
     {
@@ -45,6 +48,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     getLatestUsers();
+    getLatestTransactions()
   }, [])
 
   const getLatestUsers = async (limit = 5) => {
@@ -52,9 +56,18 @@ export default function DashboardPage() {
     // console.log(users)
     const filteredUsers = users.filter(user => !!user.created)
     // Sort by created latest to oldest
-    const sortedUsers = filteredUsers.sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime());
+    const sortedUsers = filteredUsers.sort((a, b) => new Date(b.created!).getTime() - new Date(a.created!).getTime());
     const latestUsers = sortedUsers.slice(0, limit);
     setLatestUsers(latestUsers)
+  }
+
+  const getLatestTransactions = async (limit = 5) => {
+    const transactions = await transactionsApi.getAll();
+    const filteredTransactions = transactions.filter(transaction => !!transaction.created)
+    const sortedTransactions = filteredTransactions.sort((a, b) => new Date(b.created!).getTime() - new Date(a.created).getTime());
+    console.log(sortedTransactions)
+    const latestTransactions = sortedTransactions.slice(0, limit);
+    setLatestTransactions(latestTransactions)
   }
 
   return (
@@ -66,7 +79,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {/* <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {stats.map((stat) => (
             <Card key={stat.title}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -83,14 +96,21 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           ))}
-        </div>
+        </div> */}
 
         {/* Recent Activity */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <Card>
-            <CardHeader>
-              <CardTitle>Recent Users</CardTitle>
-              <CardDescription>Latest user registrations</CardDescription>
+            <CardHeader className='flex justify-between items-center'>
+              <div>
+                <CardTitle>Recent Users</CardTitle>
+                <CardDescription>Latest user registrations</CardDescription>
+              </div>
+              <Link href='/dashboard/users'>
+                <Button variant='outline'>
+                  View All
+                </Button>
+              </Link>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -108,18 +128,25 @@ export default function DashboardPage() {
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle>Recent Transactions</CardTitle>
-              <CardDescription>Latest umbrella rentals</CardDescription>
+            <CardHeader className='flex justify-between items-center'>
+              <div>
+                <CardTitle>Recent Transactions</CardTitle>
+                <CardDescription>Latest umbrella rentals</CardDescription>
+              </div>
+              <Link href='/dashboard/transactions'>
+                <Button variant='outline'>
+                  View All
+                </Button>
+              </Link>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {[1, 2, 3].map((i) => (
+                {latestTransactions.map((transaction, i) => (
                   <div key={i} className="flex items-center space-x-4">
                     <div className="h-8 w-8 rounded-full bg-blue-200" />
                     <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium">Transaction {i}</p>
-                      <p className="text-xs text-gray-500">$5.00 • 1 hour ago</p>
+                      <p className="text-sm font-medium">{transaction.stall?.name}</p>
+                      <p className="text-xs text-gray-500">{formatAmount(transaction.amount)} • {formatTimeAgo(transaction.borrowDate)}</p>
                     </div>
                   </div>
                 ))}

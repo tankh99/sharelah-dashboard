@@ -16,6 +16,15 @@ export const formatDate = (date: Date | string | null | undefined): string => {
   }
 };
 
+
+export const formatAmount = (amount: number) => {
+  // Divide by 100 because transaction amounts are stored in cents
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(amount/100);
+};
+
 /**
  * Formats how long ago/from now a date is (e.g. "2 hours ago", "in 3 days").
  */
