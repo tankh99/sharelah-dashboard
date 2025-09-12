@@ -7,7 +7,7 @@ export interface User {
   gender: string;
   phoneNumber: string;
   email: string;
-  created: Date;
+  created: string | null;
   userRoles: UserRole[]
 }
 

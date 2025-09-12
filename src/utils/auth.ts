@@ -56,7 +56,7 @@ export const mapBackendUserToFrontend = (backendUser: BackendUser): User => {
     phoneNumber: '', // Not provided in backend response
     email: backendUser.email,
     yearOfBirth: 0,
-    created: new Date(),
+    created: backendUser.created || null,
     userRoles: roles
   };
 };
@@ -96,7 +96,7 @@ export const getUserFromToken = (): User | null => {
       phoneNumber: '',
       email,
       yearOfBirth: 0,
-      created: new Date(),
+      created: null,
       userRoles
     };
   } catch (error) {

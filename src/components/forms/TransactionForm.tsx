@@ -8,6 +8,7 @@ import { transactionSchema, type TransactionForm } from '@/lib/validations';
 import { Button } from '@/components/ui/button';
 import { FormTextInput } from '@/components/form/form-text-input';
 import { FormSelect } from '@/components/form/form-select';
+import { FormSearchSelect } from '@/components/form/form-search-select';
 import { FormDatePicker } from '@/components/form/form-date-picker';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form } from '../ui/form';
@@ -63,14 +64,12 @@ export const TransactionFormComponent = ({
         <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormSelect
+            <FormSearchSelect
               form={form}
               name="user"
               label="User"
               options={userOptions}
-              optionLabelKey="label"
-              optionValueKey="value"
-              placeholder="Select a user"
+              placeholder="Search user by name"
             />
             
             <FormSelect

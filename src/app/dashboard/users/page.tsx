@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { User } from '@/lib/types';
@@ -14,6 +15,9 @@ export default function UsersPage() {
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Fetch users on component mount
   useEffect(() => {
@@ -36,6 +40,26 @@ export default function UsersPage() {
 
     fetchUsers();
   }, []);
+
+  // Derived filtering and pagination
+  const normalizedSearch = search.trim().toLowerCase();
+  const filtered = users.filter((u) => {
+    if (!normalizedSearch) return true;
+    const hay = [u.name, u.email, u.phoneNumber, u.gender, ...(u.userRoles || [])]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+    return hay.includes(normalizedSearch);
+  });
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const startIndex = (currentPage - 1) * pageSize;
+  const paginated = filtered.slice(startIndex, startIndex + pageSize);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [search, pageSize]);
 
   const handleDeleteUser = async (userId: string) => {
     if (confirm('Are you sure you want to delete this user?')) {
@@ -127,12 +151,66 @@ export default function UsersPage() {
             <CardDescription>All registered users in the system</CardDescription>
           </CardHeader>
           <CardContent>
+            <div className="mb-4 flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+              <div className="flex-1 max-w-xl">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search by name, email, phone, role"
+                />
+              </div>
+              <div className="flex items-end gap-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Rows</label>
+                  <select
+                    className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+                    value={pageSize}
+                    onChange={(e) => setPageSize(Number(e.target.value))}
+                  >
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
+                <Button type="button" variant="outline" onClick={() => setSearch('')}>
+                  Clear
+                </Button>
+              </div>
+            </div>
             {users.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-gray-500">No users found</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
+                <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
+                  <div>
+                    Showing {filtered.length === 0 ? 0 : startIndex + 1}-{Math.min(startIndex + pageSize, filtered.length)} of {filtered.length}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage <= 1}
+                    >
+                      Previous
+                    </Button>
+                    <span>
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={currentPage >= totalPages}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
@@ -151,7 +229,7 @@ export default function UsersPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {users.map((user) => (
+                    {paginated.map((user) => (
                       <tr key={user._id}>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">

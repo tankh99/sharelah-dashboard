@@ -1,10 +1,16 @@
 "use client";
 
+import { usersApi } from '@/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { User } from '@/lib/types';
+import { formatTimeAgo } from '@/utils';
 import { Users, Store, CreditCard, TrendingUp } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 export default function DashboardPage() {
+
+  const [latestUsers, setLatestUsers] = useState<User[]>([]);
   // Mock data - replace with actual API calls
   const stats = [
     {
@@ -36,6 +42,20 @@ export default function DashboardPage() {
       icon: TrendingUp,
     },
   ];
+
+  useEffect(() => {
+    getLatestUsers();
+  }, [])
+
+  const getLatestUsers = async (limit = 5) => {
+    const users = await usersApi.getAll();
+    // console.log(users)
+    const filteredUsers = users.filter(user => !!user.created)
+    // Sort by created latest to oldest
+    const sortedUsers = filteredUsers.sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime());
+    const latestUsers = sortedUsers.slice(0, limit);
+    setLatestUsers(latestUsers)
+  }
 
   return (
     <DashboardLayout>
@@ -74,12 +94,12 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {[1, 2, 3].map((i) => (
+                {latestUsers.map((user,i) => (
                   <div key={i} className="flex items-center space-x-4">
                     <div className="h-8 w-8 rounded-full bg-gray-200" />
                     <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium">User {i}</p>
-                      <p className="text-xs text-gray-500">2 hours ago</p>
+                      <p className="text-sm font-medium">{user.name}</p>
+                      <p className="text-xs text-gray-500">{formatTimeAgo(user.created)}</p>
                     </div>
                   </div>
                 ))}

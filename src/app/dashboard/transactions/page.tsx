@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Edit, Trash2, Calendar, DollarSign } from 'lucide-react';
+import { Plus, Edit, Trash2, Calendar } from 'lucide-react';
 import { Transaction } from '@/lib/types';
-import { transactionsApi, usersApi, stallsApi } from '@/api';
+import { transactionsApi } from '@/api';
 import { ApiError } from '@/api/utils';
 import { format, parseISO } from 'date-fns';
 
@@ -15,6 +16,13 @@ export default function TransactionsPage() {
   const router = useRouter();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [search, setSearch] = useState('');
+  const [borrowFrom, setBorrowFrom] = useState<string>('');
+  const [borrowTo, setBorrowTo] = useState<string>('');
+  const [returnFrom, setReturnFrom] = useState<string>('');
+  const [returnTo, setReturnTo] = useState<string>('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Fetch data on component mount
   useEffect(() => {
@@ -40,6 +48,55 @@ export default function TransactionsPage() {
 
     fetchData();
   }, []);
+  // Derived filtering and pagination
+  const normalizedSearch = search.trim().toLowerCase();
+  const filtered = transactions.filter((t) => {
+    // Text search on user/stall
+    const haystack = [
+      t.user?.name ?? '',
+      t.user?.email ?? '',
+      t.stall?.name ?? '',
+      t.stall?.code ?? '',
+    ].join(' ').toLowerCase();
+    if (normalizedSearch && !haystack.includes(normalizedSearch)) return false;
+
+    // Borrow date range
+    if (borrowFrom) {
+      const from = new Date(borrowFrom);
+      const d = t.borrowDate ? parseISO(t.borrowDate) : null;
+      if (!d || d < from) return false;
+    }
+    if (borrowTo) {
+      const to = new Date(borrowTo);
+      const d = t.borrowDate ? parseISO(t.borrowDate) : null;
+      if (!d || d > to) return false;
+    }
+
+    // Return date range
+    if (returnFrom) {
+      const from = new Date(returnFrom);
+      const d = t.returnDate ? parseISO(t.returnDate) : null;
+      if (!d || d < from) return false;
+    }
+    if (returnTo) {
+      const to = new Date(returnTo);
+      const d = t.returnDate ? parseISO(t.returnDate) : null;
+      if (!d || d > to) return false;
+    }
+
+    return true;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const startIndex = (currentPage - 1) * pageSize;
+  const paginated = filtered.slice(startIndex, startIndex + pageSize);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [search, borrowFrom, borrowTo, returnFrom, returnTo, pageSize]);
+
 
   const handleDeleteTransaction = async (transactionId: string) => {
     if (confirm('Are you sure you want to delete this transaction?')) {
@@ -111,12 +168,94 @@ export default function TransactionsPage() {
             <CardDescription>All umbrella rental transactions in the system</CardDescription>
           </CardHeader>
           <CardContent>
+            <div className="mb-4 flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+              <div className="flex-1 max-w-xl">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search by user, email, stall, code"
+                />
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Borrow from</label>
+                  <Input type="date" value={borrowFrom} onChange={(e) => setBorrowFrom(e.target.value)} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Borrow to</label>
+                  <Input type="date" value={borrowTo} onChange={(e) => setBorrowTo(e.target.value)} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Return from</label>
+                  <Input type="date" value={returnFrom} onChange={(e) => setReturnFrom(e.target.value)} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Return to</label>
+                  <Input type="date" value={returnTo} onChange={(e) => setReturnTo(e.target.value)} />
+                </div>
+              </div>
+              <div className="flex items-end gap-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Rows</label>
+                  <select
+                    className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+                    value={pageSize}
+                    onChange={(e) => setPageSize(Number(e.target.value))}
+                  >
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setSearch('');
+                    setBorrowFrom('');
+                    setBorrowTo('');
+                    setReturnFrom('');
+                    setReturnTo('');
+                  }}
+                >
+                  Clear Filters
+                </Button>
+              </div>
+            </div>
             {transactions.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-gray-500">No transactions found</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
+                <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
+                  <div>
+                    Showing {filtered.length === 0 ? 0 : startIndex + 1}-{Math.min(startIndex + pageSize, filtered.length)} of {filtered.length}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage <= 1}
+                    >
+                      Previous
+                    </Button>
+                    <span>
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={currentPage >= totalPages}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
@@ -138,7 +277,7 @@ export default function TransactionsPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {transactions.map((transaction) => (
+                    {paginated.map((transaction) => (
                       <tr key={transaction._id}>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900">

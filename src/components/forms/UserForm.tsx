@@ -30,7 +30,6 @@ export const UserFormComponent = ({ initialData, onSubmit, isLoading = false }: 
   });
 
   const handleSubmit = (data: UserForm) => {
-    console.log(data)
     onSubmit(data);
   };
 
