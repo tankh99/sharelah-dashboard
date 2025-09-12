@@ -35,9 +35,9 @@ export const UserFormComponent = ({ initialData, onSubmit, isLoading = false }: 
   };
 
   const genderOptions = [
-    { value: 'male', label: 'Male' },
-    { value: 'female', label: 'Female' },
-    { value: 'other', label: 'Other' },
+    { value: 'Male', label: 'Male' },
+    { value: 'Female', label: 'Female' },
+    { value: 'Others', label: 'Others' },
   ];
 
   return (
