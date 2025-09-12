@@ -105,6 +105,8 @@ export const TransactionFormComponent = ({
               form={form}
               name="returnDate"
               label="Return Date"
+              allowClear
+              clearLabel="Clear Return Date"
             />
           </div>
 

@@ -32,7 +32,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         { name: 'Users', href: '/dashboard/users', icon: Users },
         { name: 'Stalls', href: '/dashboard/stalls', icon: Store },
         { name: 'Transactions', href: '/dashboard/transactions', icon: CreditCard },
-        { name: 'Settings', href: '/dashboard/settings', icon: Settings },
+        // { name: 'Settings', href: '/dashboard/settings', icon: Settings },
     ];
 
     const handleLogout = () => {

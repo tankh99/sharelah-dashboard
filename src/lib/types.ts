@@ -30,8 +30,7 @@ export interface Transaction {
   amount: number;
   borrowDate: string | null;
   returnDate: string | null;
-  createdAt: string;
-  updatedAt: string;
+  created: string;
 }
 
 

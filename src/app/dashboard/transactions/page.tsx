@@ -121,9 +121,6 @@ export default function TransactionsPage() {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Transaction
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         User
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -144,21 +141,6 @@ export default function TransactionsPage() {
                     {transactions.map((transaction) => (
                       <tr key={transaction._id}>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="h-10 w-10 rounded-full bg-green-200 flex items-center justify-center">
-                              <DollarSign className="h-5 w-5 text-green-600" />
-                            </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">
-                                #{transaction._id}
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                {formatDate(transaction.createdAt)}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900">
                             {transaction.user?.name || 'Unknown User'}
                           </div>
@@ -176,7 +158,7 @@ export default function TransactionsPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-medium text-gray-900">
-                            {formatAmount(transaction.amount)}
+                            {formatAmount(transaction.amount / 100)}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">

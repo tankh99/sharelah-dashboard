@@ -24,10 +24,12 @@ import type { FormInputProps } from "./form-types";
 type FormDateInputProps = FormInputProps & {
   calendarProps?: any;
   description?: string;
+  allowClear?: boolean;
+  clearLabel?: string;
 };
 
 export function FormDatePicker(props: FormDateInputProps) {
-  const { form, name, label, description, placeholder, calendarProps } = props;
+  const { form, name, label, description, placeholder, calendarProps, allowClear = true, clearLabel = "Clear" } = props;
 
   return (
     <FormField
@@ -63,16 +65,28 @@ export function FormDatePicker(props: FormDateInputProps) {
               <PopoverContent align="start" className="w-auto p-0 bg-white">
                 {/* Code reference: https://github.com/Medaillek/shadcn-ui-date-picker/blob/main/DatePicker.tsx */}
                 <Calendar
-                  onSelect={field.onChange}
+                  onSelect={(date) => field.onChange(date ?? null)}
                   fixedWeeks // Helps prevent layout shifting when navigating between months
-                  defaultMonth={value}
-                  month={value}
-                  onMonthChange={field.onChange}
+                  defaultMonth={value ?? new Date()}
+                  month={value ?? undefined}
+                  onMonthChange={(date) => field.onChange(date ?? null)}
                   captionLayout="dropdown-buttons"
                   mode="single" // Defaults to single, but can be overridden
                   selected={value}
                   {...calendarProps}
                 />
+                {allowClear && (
+                  <div className="flex justify-end p-2 border-t">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="h-8 px-2"
+                      onClick={() => field.onChange(null)}
+                    >
+                      {clearLabel}
+                    </Button>
+                  </div>
+                )}
               </PopoverContent>
             </Popover>
             <FormMessage />

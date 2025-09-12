@@ -60,7 +60,6 @@ export default function EditTransactionPage() {
     try {
       setIsLoading(true);
       await transactionsApi.update(transactionId, data);
-      router.push('/dashboard/transactions');
     } catch (error) {
       console.error('Error updating transaction:', error);
       if (error instanceof ApiError) {
