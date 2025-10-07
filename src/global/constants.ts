@@ -1,0 +1,2 @@
+export const LATE_THRESHOLD_DAYS = 2;
+export const PURCHASE_THRESHOLD_DAYS = 5;

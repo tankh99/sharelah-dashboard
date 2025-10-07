@@ -23,6 +23,7 @@ import {
   Cell,
 } from "recharts";
 import { differenceInBusinessDays, eachDayOfInterval, format as formatDateFns, parseISO, startOfDay } from 'date-fns';
+import { LATE_THRESHOLD_DAYS, PURCHASE_THRESHOLD_DAYS } from '@/global/constants';
 
 export default function DashboardPage() {
 
@@ -40,8 +41,8 @@ export default function DashboardPage() {
   })();
   const [rangeFrom, setRangeFrom] = useState<string>(defaultFrom.toISOString().split('T')[0]);
   const [rangeTo, setRangeTo] = useState<string>(today.toISOString().split('T')[0]);
-  const [lateThresholdDays, setLateThresholdDays] = useState<number>(2);
-  const [purchaseThresholdDays, setPurchaseThresholdDays] = useState<number>(5);
+  const [lateThresholdDays, setLateThresholdDays] = useState<number>(LATE_THRESHOLD_DAYS);
+  const [purchaseThresholdDays, setPurchaseThresholdDays] = useState<number>(PURCHASE_THRESHOLD_DAYS);
   // Deprecated mock stats removed
 
   useEffect(() => {
@@ -106,15 +107,15 @@ export default function DashboardPage() {
     const borrow = parseDate(t.borrowDate) || parseDate(t.created);
     if (!borrow) return false;
     const returned = parseDate(t.returnDate) || new Date();
-    return differenceInBusinessDays(borrow, returned) > lateThresholdDays;
+    return differenceInBusinessDays(returned, borrow) > lateThresholdDays;
   };
 
   const isPurchasedTx = (t: Transaction): boolean => {
     const borrow = parseDate(t.borrowDate) || parseDate(t.created);
     if (!borrow) return false;
-    if (t.returnDate) return false;
-    console.log(differenceInBusinessDays(borrow, new Date()))
-    return differenceInBusinessDays(borrow, new Date()) >= purchaseThresholdDays;
+    const returned = parseDate(t.returnDate);
+    if (!returned) return false;
+    return differenceInBusinessDays(returned, borrow) >= purchaseThresholdDays;
   };
 
   const newUsersInRangeCount = newUsersInRange.length;

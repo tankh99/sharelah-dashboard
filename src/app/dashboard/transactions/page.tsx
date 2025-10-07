@@ -10,11 +10,12 @@ import { Plus, Edit, Trash2, Calendar } from 'lucide-react';
 import { Transaction } from '@/lib/types';
 import { transactionsApi } from '@/api';
 import { ApiError } from '@/api/utils';
-import { format, parseISO } from 'date-fns';
+import { differenceInBusinessDays, format, parseISO } from 'date-fns';
 import { formatAmount } from '@/utils';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DateRange } from 'react-day-picker';
+import { LATE_THRESHOLD_DAYS, PURCHASE_THRESHOLD_DAYS } from '@/global/constants';
 
 export default function TransactionsPage() {
   const router = useRouter();
@@ -52,39 +53,17 @@ export default function TransactionsPage() {
     fetchData();
   }, []);
 
-  const getTransactionStatus = (t: Transaction) => {
-    const lateThresholdDays = 1;
-    const purchaseThresholdDays = 14;
+  const parseDate = (d?: string | null): Date | null => {
+    if (!d) return null;
+    const dt = new Date(d);
+    return isNaN(dt.getTime()) ? null : dt;
+  };
 
-    const parseDate = (d?: string | null): Date | null => {
-      if (!d) return null;
-      const dt = new Date(d);
-      return isNaN(dt.getTime()) ? null : dt;
-    };
-
-    const diffDays = (a: Date, b: Date): number => {
-      const ms = b.getTime() - a.getTime();
-      return Math.floor(ms / (1000 * 60 * 60 * 24));
-    };
-
-    if (t.returnDate) {
-      return 'returned';
-    }
-
-    const borrowDate = parseDate(t.borrowDate) || parseDate(t.created);
-    if (!borrowDate) {
-      return 'ongoing'; // Should not happen with valid data
-    }
-
-    const daysDifference = diffDays(borrowDate, new Date());
-
-    if (daysDifference >= purchaseThresholdDays) {
-      return 'purchased';
-    }
-    if (daysDifference > lateThresholdDays) {
-      return 'late';
-    }
-    return 'ongoing';
+  const elapsedBusinessDays = (t: Transaction): number | null => {
+    const borrow = parseDate(t.borrowDate) || parseDate(t.created);
+    if (!borrow) return null;
+    const end = parseDate(t.returnDate) || new Date();
+    return differenceInBusinessDays(end, borrow);
   };
 
   // Derived filtering and pagination
@@ -113,9 +92,16 @@ export default function TransactionsPage() {
 
     // Transaction type filtering
     if (transactionType !== 'all') {
-      const status = getTransactionStatus(t);
-      if (status !== transactionType) {
-        return false;
+      const days = elapsedBusinessDays(t);
+      if (transactionType === 'returned') {
+        if (!t.returnDate) return false;
+      } else if (transactionType === 'purchased') {
+        if (days === null || days < PURCHASE_THRESHOLD_DAYS) return false;
+      } else if (transactionType === 'late') {
+        if (days === null || !(days > LATE_THRESHOLD_DAYS && days < PURCHASE_THRESHOLD_DAYS)) return false;
+      } else if (transactionType === 'ongoing') {
+        if (t.returnDate) return false;
+        if (days !== null && days > LATE_THRESHOLD_DAYS) return false;
       }
     }
 
