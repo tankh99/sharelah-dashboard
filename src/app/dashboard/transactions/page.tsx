@@ -172,7 +172,7 @@ export default function TransactionsPage() {
                   placeholder="Search by user, email, stall, code"
                 />
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="flex flex-wrap gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Borrow from</label>
                   <Input type="date" value={borrowFrom} onChange={(e) => setBorrowFrom(e.target.value)} />

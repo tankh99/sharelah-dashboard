@@ -3,72 +3,159 @@
 import { transactionsApi, usersApi } from '@/api';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Transaction, User } from '@/lib/types';
-import { formatAmount, formatTimeAgo } from '@/utils';
-import { Users, Store, CreditCard, TrendingUp } from 'lucide-react';
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { Transaction, User } from "@/lib/types";
+import { formatAmount, formatTimeAgo } from "@/utils";
+import Link from "next/link";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
 
 export default function DashboardPage() {
 
   const [latestUsers, setLatestUsers] = useState<User[]>([]);
   const [latestTransactions, setLatestTransactions] = useState<Transaction[]>([]);
-  // Mock data - replace with actual API calls
-  const stats = [
-    {
-      title: 'Total Users',
-      value: '1,234',
-      change: '+12%',
-      changeType: 'positive',
-      icon: Users,
-    },
-    {
-      title: 'Active Stalls',
-      value: '89',
-      change: '+5%',
-      changeType: 'positive',
-      icon: Store,
-    },
-    {
-      title: 'Total Transactions',
-      value: '5,678',
-      change: '+23%',
-      changeType: 'positive',
-      icon: CreditCard,
-    },
-    {
-      title: 'Revenue',
-      value: '$12,345',
-      change: '+18%',
-      changeType: 'positive',
-      icon: TrendingUp,
-    },
-  ];
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
+
+  // Date range and thresholds for analytics
+  const today = new Date();
+  const defaultFrom = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 30);
+    return d;
+  })();
+  const [rangeFrom, setRangeFrom] = useState<string>(defaultFrom.toISOString().split('T')[0]);
+  const [rangeTo, setRangeTo] = useState<string>(today.toISOString().split('T')[0]);
+  const [lateThresholdDays, setLateThresholdDays] = useState<number>(1);
+  const [purchaseThresholdDays, setPurchaseThresholdDays] = useState<number>(14);
+  // Deprecated mock stats removed
 
   useEffect(() => {
-    getLatestUsers();
-    getLatestTransactions()
+    const loadData = async () => {
+      const [users, transactions] = await Promise.all([
+        usersApi.getAll(),
+        transactionsApi.getAll(),
+      ]);
+
+      setAllUsers(users);
+      setAllTransactions(transactions);
+
+      const latestUsersComputed = users
+        .filter(u => !!u.created)
+        .sort((a, b) => new Date(b.created!).getTime() - new Date(a.created!).getTime())
+        .slice(0, 5);
+      setLatestUsers(latestUsersComputed);
+
+      const latestTxComputed = transactions
+        .filter(t => !!t.created)
+        .sort((a, b) => new Date(b.created!).getTime() - new Date(a.created).getTime())
+        .slice(0, 5);
+      setLatestTransactions(latestTxComputed);
+    };
+
+    loadData();
   }, [])
 
-  const getLatestUsers = async (limit = 5) => {
-    const users = await usersApi.getAll();
-    // console.log(users)
-    const filteredUsers = users.filter(user => !!user.created)
-    // Sort by created latest to oldest
-    const sortedUsers = filteredUsers.sort((a, b) => new Date(b.created!).getTime() - new Date(a.created!).getTime());
-    const latestUsers = sortedUsers.slice(0, limit);
-    setLatestUsers(latestUsers)
-  }
+  // Helpers
+  const parseDate = (d?: string | null): Date | null => {
+    if (!d) return null;
+    const dt = new Date(d);
+    return isNaN(dt.getTime()) ? null : dt;
+  };
 
-  const getLatestTransactions = async (limit = 5) => {
-    const transactions = await transactionsApi.getAll();
-    const filteredTransactions = transactions.filter(transaction => !!transaction.created)
-    const sortedTransactions = filteredTransactions.sort((a, b) => new Date(b.created!).getTime() - new Date(a.created).getTime());
-    console.log(sortedTransactions)
-    const latestTransactions = sortedTransactions.slice(0, limit);
-    setLatestTransactions(latestTransactions)
-  }
+  const isWithinRange = (d: Date | null, fromStr: string, toStr: string): boolean => {
+    if (!d) return false;
+    const from = new Date(fromStr);
+    const to = new Date(toStr);
+    // Normalize inclusive end by setting to end of day
+    to.setHours(23, 59, 59, 999);
+    return d >= from && d <= to;
+  };
+
+  const diffDays = (a: Date, b: Date): number => {
+    const ms = b.getTime() - a.getTime();
+    return Math.floor(ms / (1000 * 60 * 60 * 24));
+  };
+
+  // Analytics calculations based on date range
+  const newUsersInRange = useMemo(() => allUsers.filter(u => {
+    const created = parseDate(u.created);
+    return isWithinRange(created, rangeFrom, rangeTo);
+  }), [allUsers, rangeFrom, rangeTo]);
+
+  const transactionsInRange = allTransactions.filter(t => {
+    const base = parseDate(t.borrowDate) || parseDate(t.created);
+    return isWithinRange(base, rangeFrom, rangeTo);
+  });
+
+  const isLateTx = (t: Transaction): boolean => {
+    const borrow = parseDate(t.borrowDate) || parseDate(t.created);
+    if (!borrow) return false;
+    const returned = parseDate(t.returnDate) || new Date();
+    return diffDays(borrow, returned) > lateThresholdDays;
+  };
+
+  const isPurchasedTx = (t: Transaction): boolean => {
+    const borrow = parseDate(t.borrowDate) || parseDate(t.created);
+    if (!borrow) return false;
+    if (t.returnDate) return false;
+    return diffDays(borrow, new Date()) >= purchaseThresholdDays;
+  };
+
+  const newUsersInRangeCount = newUsersInRange.length;
+  const transactionsInRangeCount = transactionsInRange.length;
+  const lateTransactionsCount = transactionsInRange.filter(isLateTx).length;
+  const purchasedCount = transactionsInRange.filter(isPurchasedTx).length;
+
+  // Data for charts
+  const getDataForChart = useCallback((items: (User | Transaction)[], dateKey: 'created' | 'borrowDate') => {
+    const countsByDay: { [key: string]: number } = {};
+    const from = new Date(rangeFrom);
+    const to = new Date(rangeTo);
+
+    for (let d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
+      countsByDay[d.toISOString().split('T')[0]] = 0;
+    }
+
+    items.forEach(item => {
+      // @ts-expect-error - item can be User or Transaction, keys are checked
+      const date = parseDate(item[dateKey] || item['created']);
+      if (date) {
+        const day = date.toISOString().split('T')[0];
+        if (countsByDay[day] !== undefined) {
+          countsByDay[day]++;
+        }
+      }
+    });
+
+    return Object.keys(countsByDay).map(day => ({
+      date: day,
+      count: countsByDay[day],
+    })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [rangeFrom, rangeTo]);
+
+  const userChartData = useMemo(() => getDataForChart(newUsersInRange, 'created'), [newUsersInRange, getDataForChart]);
+  const transactionChartData = useMemo(() => getDataForChart(transactionsInRange, 'borrowDate'), [transactionsInRange, getDataForChart]);
+
+  const transactionStatusData = [
+    { name: 'On-time', value: transactionsInRangeCount - lateTransactionsCount - purchasedCount },
+    { name: 'Late', value: lateTransactionsCount },
+    { name: 'Purchased', value: purchasedCount },
+  ];
+  const PIE_COLORS = ['#0088FE', '#FFBB28', '#FF8042'];
 
   return (
     <DashboardLayout>
@@ -78,25 +165,123 @@ export default function DashboardPage() {
           <p className="text-gray-600">Welcome to your ShareLah dashboard</p>
         </div>
 
-        {/* Stats Grid */}
-        {/* <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {stats.map((stat) => (
-            <Card key={stat.title}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-                <stat.icon className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-                <p className={`text-xs ${
-                  stat.changeType === 'positive' ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {stat.change} from last month
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-        </div> */}
+        {/* Analytics Controls */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Analytics</CardTitle>
+            <CardDescription>Adjust date range and thresholds</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">From</label>
+                <Input type="date" value={rangeFrom} onChange={(e) => setRangeFrom(e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">To</label>
+                <Input type="date" value={rangeTo} onChange={(e) => setRangeTo(e.target.value)} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Late threshold (days)</label>
+                  <Input
+                    type="number"
+                    value={lateThresholdDays}
+                    onChange={(e) => setLateThresholdDays(Number(e.target.value) || 0)}
+                    min={0}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Purchase threshold (days)</label>
+                  <Input
+                    type="number"
+                    value={purchaseThresholdDays}
+                    onChange={(e) => setPurchaseThresholdDays(Number(e.target.value) || 0)}
+                    min={0}
+                  />
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Analytics Summary */}
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">New Users (range)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{newUsersInRangeCount}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Transactions (range)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{transactionsInRangeCount}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Late Transactions (range)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{lateTransactionsCount}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Bought Umbrellas (range)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{purchasedCount}</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Charts */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          <Card className="xl:col-span-2">
+            <CardHeader>
+              <CardTitle>New Users & Transactions</CardTitle>
+              <CardDescription>Volume over selected date range</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="count" name="New Users" data={userChartData} stroke="#8884d8" />
+                  <Line type="monotone" dataKey="count" name="Transactions" data={transactionChartData} stroke="#82ca9d" />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Transaction Status</CardTitle>
+              <CardDescription>Breakdown of transactions in range</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie data={transactionStatusData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} fill="#8884d8" label>
+                    {transactionStatusData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Recent Activity */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
