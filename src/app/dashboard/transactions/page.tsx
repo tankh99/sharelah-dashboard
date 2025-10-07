@@ -12,16 +12,18 @@ import { transactionsApi } from '@/api';
 import { ApiError } from '@/api/utils';
 import { format, parseISO } from 'date-fns';
 import { formatAmount } from '@/utils';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DateRange } from 'react-day-picker';
 
 export default function TransactionsPage() {
   const router = useRouter();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [search, setSearch] = useState('');
-  const [borrowFrom, setBorrowFrom] = useState<string>('');
-  const [borrowTo, setBorrowTo] = useState<string>('');
-  const [returnFrom, setReturnFrom] = useState<string>('');
-  const [returnTo, setReturnTo] = useState<string>('');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [dateFilterType, setDateFilterType] = useState('borrowDate');
+  const [transactionType, setTransactionType] = useState('all');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -49,6 +51,42 @@ export default function TransactionsPage() {
 
     fetchData();
   }, []);
+
+  const getTransactionStatus = (t: Transaction) => {
+    const lateThresholdDays = 1;
+    const purchaseThresholdDays = 14;
+
+    const parseDate = (d?: string | null): Date | null => {
+      if (!d) return null;
+      const dt = new Date(d);
+      return isNaN(dt.getTime()) ? null : dt;
+    };
+
+    const diffDays = (a: Date, b: Date): number => {
+      const ms = b.getTime() - a.getTime();
+      return Math.floor(ms / (1000 * 60 * 60 * 24));
+    };
+
+    if (t.returnDate) {
+      return 'returned';
+    }
+
+    const borrowDate = parseDate(t.borrowDate) || parseDate(t.created);
+    if (!borrowDate) {
+      return 'ongoing'; // Should not happen with valid data
+    }
+
+    const daysDifference = diffDays(borrowDate, new Date());
+
+    if (daysDifference >= purchaseThresholdDays) {
+      return 'purchased';
+    }
+    if (daysDifference > lateThresholdDays) {
+      return 'late';
+    }
+    return 'ongoing';
+  };
+
   // Derived filtering and pagination
   const normalizedSearch = search.trim().toLowerCase();
   const filtered = transactions.filter((t) => {
@@ -61,28 +99,24 @@ export default function TransactionsPage() {
     ].join(' ').toLowerCase();
     if (normalizedSearch && !haystack.includes(normalizedSearch)) return false;
 
-    // Borrow date range
-    if (borrowFrom) {
-      const from = new Date(borrowFrom);
-      const d = t.borrowDate ? parseISO(t.borrowDate) : null;
-      if (!d || d < from) return false;
+    // Date range filtering
+    if (dateRange?.from) {
+      const dateToFilter = dateFilterType === 'borrowDate' ? t.borrowDate : t.returnDate;
+      const d = dateToFilter ? parseISO(dateToFilter) : null;
+      if (!d || d < dateRange.from) return false;
     }
-    if (borrowTo) {
-      const to = new Date(borrowTo);
-      const d = t.borrowDate ? parseISO(t.borrowDate) : null;
-      if (!d || d > to) return false;
+    if (dateRange?.to) {
+      const dateToFilter = dateFilterType === 'borrowDate' ? t.borrowDate : t.returnDate;
+      const d = dateToFilter ? parseISO(dateToFilter) : null;
+      if (!d || d > dateRange.to) return false;
     }
 
-    // Return date range
-    if (returnFrom) {
-      const from = new Date(returnFrom);
-      const d = t.returnDate ? parseISO(t.returnDate) : null;
-      if (!d || d < from) return false;
-    }
-    if (returnTo) {
-      const to = new Date(returnTo);
-      const d = t.returnDate ? parseISO(t.returnDate) : null;
-      if (!d || d > to) return false;
+    // Transaction type filtering
+    if (transactionType !== 'all') {
+      const status = getTransactionStatus(t);
+      if (status !== transactionType) {
+        return false;
+      }
     }
 
     return true;
@@ -96,7 +130,7 @@ export default function TransactionsPage() {
   // Reset to first page when filters change
   useEffect(() => {
     setPage(1);
-  }, [search, borrowFrom, borrowTo, returnFrom, returnTo, pageSize]);
+  }, [search, dateRange, dateFilterType, transactionType, pageSize]);
 
 
   const handleDeleteTransaction = async (transactionId: string) => {
@@ -172,22 +206,36 @@ export default function TransactionsPage() {
                   placeholder="Search by user, email, stall, code"
                 />
               </div>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex items-end gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Borrow from</label>
-                  <Input type="date" value={borrowFrom} onChange={(e) => setBorrowFrom(e.target.value)} />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Transaction Type</label>
+                  <Select value={transactionType} onValueChange={setTransactionType}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="ongoing">On-going</SelectItem>
+                      <SelectItem value="late">Late</SelectItem>
+                      <SelectItem value="purchased">Purchased</SelectItem>
+                      <SelectItem value="returned">Returned</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Borrow to</label>
-                  <Input type="date" value={borrowTo} onChange={(e) => setBorrowTo(e.target.value)} />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Filter by date</label>
+                  <Select value={dateFilterType} onValueChange={setDateFilterType}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Select date type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="borrowDate">Borrow Date</SelectItem>
+                      <SelectItem value="returnDate">Return Date</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Return from</label>
-                  <Input type="date" value={returnFrom} onChange={(e) => setReturnFrom(e.target.value)} />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Return to</label>
-                  <Input type="date" value={returnTo} onChange={(e) => setReturnTo(e.target.value)} />
+                  <DateRangePicker date={dateRange} onDateChange={setDateRange} />
                 </div>
               </div>
               <div className="flex items-end gap-2">
@@ -209,10 +257,8 @@ export default function TransactionsPage() {
                   variant="outline"
                   onClick={() => {
                     setSearch('');
-                    setBorrowFrom('');
-                    setBorrowTo('');
-                    setReturnFrom('');
-                    setReturnTo('');
+                    setDateRange(undefined);
+                    setTransactionType('all');
                   }}
                 >
                   Clear Filters
