@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Transaction, User } from "@/lib/types";
 import { formatAmount, formatTimeAgo } from "@/utils";
 import Link from "next/link";
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   LineChart,
   Line,
@@ -22,6 +22,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
+import { differenceInBusinessDays, eachDayOfInterval, format as formatDateFns, parseISO, startOfDay } from 'date-fns';
 
 export default function DashboardPage() {
 
@@ -39,8 +40,8 @@ export default function DashboardPage() {
   })();
   const [rangeFrom, setRangeFrom] = useState<string>(defaultFrom.toISOString().split('T')[0]);
   const [rangeTo, setRangeTo] = useState<string>(today.toISOString().split('T')[0]);
-  const [lateThresholdDays, setLateThresholdDays] = useState<number>(1);
-  const [purchaseThresholdDays, setPurchaseThresholdDays] = useState<number>(14);
+  const [lateThresholdDays, setLateThresholdDays] = useState<number>(2);
+  const [purchaseThresholdDays, setPurchaseThresholdDays] = useState<number>(5);
   // Deprecated mock stats removed
 
   useEffect(() => {
@@ -105,14 +106,15 @@ export default function DashboardPage() {
     const borrow = parseDate(t.borrowDate) || parseDate(t.created);
     if (!borrow) return false;
     const returned = parseDate(t.returnDate) || new Date();
-    return diffDays(borrow, returned) > lateThresholdDays;
+    return differenceInBusinessDays(borrow, returned) > lateThresholdDays;
   };
 
   const isPurchasedTx = (t: Transaction): boolean => {
     const borrow = parseDate(t.borrowDate) || parseDate(t.created);
     if (!borrow) return false;
     if (t.returnDate) return false;
-    return diffDays(borrow, new Date()) >= purchaseThresholdDays;
+    console.log(differenceInBusinessDays(borrow, new Date()))
+    return differenceInBusinessDays(borrow, new Date()) >= purchaseThresholdDays;
   };
 
   const newUsersInRangeCount = newUsersInRange.length;
@@ -121,35 +123,52 @@ export default function DashboardPage() {
   const purchasedCount = transactionsInRange.filter(isPurchasedTx).length;
 
   // Data for charts
-  const getDataForChart = useCallback((items: (User | Transaction)[], dateKey: 'created' | 'borrowDate') => {
-    const countsByDay: { [key: string]: number } = {};
-    const from = new Date(rangeFrom);
-    const to = new Date(rangeTo);
+  const lineChartData = useMemo(() => {
+    try {
+      const from = startOfDay(parseISO(rangeFrom));
+      const to = startOfDay(parseISO(rangeTo));
 
-    for (let d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
-      countsByDay[d.toISOString().split('T')[0]] = 0;
-    }
+      const dateInterval = eachDayOfInterval({ start: from, end: to });
+      const dailyData = new Map<string, { users: number; transactions: number }>(
+        dateInterval.map(day => [
+          formatDateFns(day, 'yyyy-MM-dd'),
+          { users: 0, transactions: 0 },
+        ])
+      );
 
-    items.forEach(item => {
-      // @ts-expect-error - item can be User or Transaction, keys are checked
-      const date = parseDate(item[dateKey] || item['created']);
-      if (date) {
-        const day = date.toISOString().split('T')[0];
-        if (countsByDay[day] !== undefined) {
-          countsByDay[day]++;
+      newUsersInRange.forEach(user => {
+        if (user.created) {
+          const dayKey = formatDateFns(startOfDay(parseISO(user.created)), 'yyyy-MM-dd');
+          if (dailyData.has(dayKey)) {
+            dailyData.get(dayKey)!.users++;
+          }
         }
-      }
-    });
+      });
 
-    return Object.keys(countsByDay).map(day => ({
-      date: day,
-      count: countsByDay[day],
-    })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }, [rangeFrom, rangeTo]);
+      transactionsInRange.forEach(transaction => {
+        const dateString = transaction.borrowDate || transaction.created;
+        if (dateString) {
+          const dayKey = formatDateFns(startOfDay(parseISO(dateString)), 'yyyy-MM-dd');
+          if (dailyData.has(dayKey)) {
+            dailyData.get(dayKey)!.transactions++;
+          }
+        }
+      });
 
-  const userChartData = useMemo(() => getDataForChart(newUsersInRange, 'created'), [newUsersInRange, getDataForChart]);
-  const transactionChartData = useMemo(() => getDataForChart(transactionsInRange, 'borrowDate'), [transactionsInRange, getDataForChart]);
+      const chartData = Array.from(dailyData.entries()).map(([date, counts]) => ({
+        date,
+        users: counts.users,
+        transactions: counts.transactions,
+      }));
 
+      return chartData.sort((a, b) => a.date.localeCompare(b.date));
+    } catch (error) {
+      console.error("Error processing chart data:", error);
+      return [];
+    }
+  }, [rangeFrom, rangeTo, newUsersInRange, transactionsInRange]);
+
+  // console.log("line", lineChartData)
   const transactionStatusData = [
     { name: 'On-time', value: transactionsInRangeCount - lateTransactionsCount - purchasedCount },
     { name: 'Late', value: lateTransactionsCount },
@@ -250,14 +269,14 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                <LineChart data={lineChartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Line type="monotone" dataKey="count" name="New Users" data={userChartData} stroke="#8884d8" />
-                  <Line type="monotone" dataKey="count" name="Transactions" data={transactionChartData} stroke="#82ca9d" />
+                  <Line type="monotone" dataKey="users" name="New Users" stroke="#8884d8" />
+                  <Line type="monotone" dataKey="transactions" name="Transactions" stroke="#82ca9d" />
                 </LineChart>
               </ResponsiveContainer>
             </CardContent>
