@@ -5,6 +5,7 @@ import { LoginFormComponent } from '@/components/auth/LoginForm';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Store, CreditCard, TrendingUp } from 'lucide-react';
+import { redirect } from 'next/navigation';
 
 export default function Home() {
   const { user, isLoading } = useAuth();
@@ -20,8 +21,11 @@ export default function Home() {
     );
   }
 
+
   if (!user) {
     return <LoginFormComponent />;
+  } else {
+    redirect("/dashboard")
   }
 
   // Show dashboard overview
