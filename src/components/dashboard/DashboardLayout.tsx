@@ -12,7 +12,7 @@ import {
     Menu,
     X,
     Home,
-    Settings
+    Ticket
 } from 'lucide-react';
 import { useState } from 'react';
 import Link from 'next/link';
@@ -32,6 +32,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         { name: 'Users', href: '/dashboard/users', icon: Users },
         { name: 'Stalls', href: '/dashboard/stalls', icon: Store },
         { name: 'Transactions', href: '/dashboard/transactions', icon: CreditCard },
+        { name: 'Promo Codes', href: '/dashboard/promo-codes', icon: Ticket },
         // { name: 'Settings', href: '/dashboard/settings', icon: Settings },
     ];
 

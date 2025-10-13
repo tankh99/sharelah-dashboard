@@ -1,11 +1,12 @@
 import { z } from 'zod';
-import { StallStatus } from './enums';
+import { StallStatus, PromoCodeType } from './enums';
 
 // Export inferred types from Zod schemas
 export type LoginForm = z.infer<typeof loginSchema>;
 export type UserForm = z.infer<typeof userSchema>;
 export type StallForm = z.infer<typeof stallSchema>;
 export type TransactionForm = z.infer<typeof transactionSchema>;
+export type PromoCodeForm = z.infer<typeof promoCodeSchema>;
 
 export const loginSchema = z.object({
   email: z.email('Invalid email address'),
@@ -45,4 +46,14 @@ export const transactionSchema = z.object({
 }, {
   message: "Return date must be after borrow date",
   path: ["returnDate"],
+});
+
+export const promoCodeSchema = z.object({
+  code: z.string().min(1, 'Code is required'),
+  type: z.enum(Object.values(PromoCodeType) as [string, ...string[]]),
+  value: z.coerce.number().min(0, 'Value must be 0 or greater'),
+  maxUses: z.coerce.number().min(0, 'Max uses must be 0 or greater'),
+  expiresAt: z.date().nullable(),
+  isActive: z.boolean(),
+  minPurchase: z.coerce.number().min(0, 'Min purchase must be 0 or greater').optional(),
 });

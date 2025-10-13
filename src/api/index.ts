@@ -5,3 +5,4 @@ export { ApiError, apiRequest } from './utils';
 export { stallsApi } from './stalls';
 export { usersApi } from './users';
 export { transactionsApi } from './transactions';
+export { promoCodesApi } from './promo-codes';

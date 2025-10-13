@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { hasAdminAccessFromToken, isTokenExpired } from '@/utils/jwt';
+import { Button } from '../ui/button';
 
 interface AdminRouteGuardProps {
   children: React.ReactNode;
@@ -72,12 +73,12 @@ export const AdminRouteGuard: React.FC<AdminRouteGuardProps> = ({
           <p className="text-gray-600 mb-4">
             You don&apos;t have permission to access this page.
           </p>
-          <button
+          <Button
             onClick={() => router.push('/')}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
           >
             Go to Login
-          </button>
+          </Button>
         </div>
       </div>
     );

@@ -21,3 +21,9 @@ export enum UserStatus {
   INACTIVE = 'inactive',
   SUSPENDED = 'suspended'
 }
+
+export enum PromoCodeType {
+  SIGNUP_DISCOUNT = 'SIGNUP_DISCOUNT',
+  RENTAL_PERCENT_OFF = 'RENTAL_PERCENT_OFF',
+  ITEM_SPECIFIC_FLAT = 'ITEM_SPECIFIC_FLAT',
+}

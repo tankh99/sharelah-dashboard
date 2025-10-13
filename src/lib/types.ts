@@ -1,4 +1,4 @@
-import { StallStatus, UserRole } from './enums';
+import { StallStatus, UserRole, PromoCodeType } from './enums';
 
 export interface User {
   _id: string;
@@ -31,6 +31,18 @@ export interface Transaction {
   borrowDate: string | null;
   returnDate: string | null;
   created: string;
+}
+
+export interface PromoCode {
+  _id: string;
+  code: string;
+  type: PromoCodeType;
+  value: number;
+  maxUses: number;
+  timesUsed: number;
+  expiresAt: Date | null;
+  isActive: boolean;
+  minPurchase: number;
 }
 
 

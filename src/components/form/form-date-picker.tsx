@@ -52,6 +52,7 @@ export function FormDatePicker(props: FormDateInputProps) {
                       !field.value && "text-muted-500",
                     )}
                     variant="outline"
+                    disabled={calendarProps?.disabled}
                   >
                     {field.value ? (
                       format(value, "PPP")
