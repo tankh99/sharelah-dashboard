@@ -87,11 +87,6 @@ export default function DashboardPage() {
     return d >= from && d <= to;
   };
 
-  const diffDays = (a: Date, b: Date): number => {
-    const ms = b.getTime() - a.getTime();
-    return Math.floor(ms / (1000 * 60 * 60 * 24));
-  };
-
   // Analytics calculations based on date range
   const newUsersInRange = useMemo(() => allUsers.filter(u => {
     const created = parseDate(u.created);

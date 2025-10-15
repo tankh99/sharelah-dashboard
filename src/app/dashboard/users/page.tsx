@@ -10,12 +10,16 @@ import { Plus, Edit, Trash2 } from 'lucide-react';
 import { User } from '@/lib/types';
 import { usersApi } from '@/api';
 import { ApiError } from '@/api/utils';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
+import { DateRange } from 'react-day-picker';
+import { format, parseISO } from 'date-fns';
 
 export default function UsersPage() {
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [search, setSearch] = useState('');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -42,8 +46,23 @@ export default function UsersPage() {
   }, []);
 
   // Derived filtering and pagination
+  const sortedUsers = users.sort((a, b) => {
+    const dateA = a.created ? new Date(a.created).getTime() : 0;
+    const dateB = b.created ? new Date(b.created).getTime() : 0;
+    return dateB - dateA;
+  });
+
   const normalizedSearch = search.trim().toLowerCase();
-  const filtered = users.filter((u) => {
+  const filtered = sortedUsers.filter((u) => {
+    if (dateRange?.from) {
+      const d = u.created ? parseISO(u.created) : null;
+      if (!d || d < dateRange.from) return false;
+    }
+    if (dateRange?.to) {
+      const d = u.created ? parseISO(u.created) : null;
+      if (!d || d > dateRange.to) return false;
+    }
+
     if (!normalizedSearch) return true;
     const hay = [u.name, u.email, u.phoneNumber, u.gender, ...(u.userRoles || [])]
       .filter(Boolean)
@@ -59,7 +78,7 @@ export default function UsersPage() {
   // Reset to first page when filters change
   useEffect(() => {
     setPage(1);
-  }, [search, pageSize]);
+  }, [search, pageSize, dateRange]);
 
   const handleDeleteUser = async (userId: string) => {
     if (confirm('Are you sure you want to delete this user?')) {
@@ -104,20 +123,6 @@ export default function UsersPage() {
     </div>
   );
 
-  const getStatusBadge = (status: string) => (
-    <span
-      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-        status === 'active'
-          ? 'bg-green-100 text-green-800'
-          : status === 'inactive'
-          ? 'bg-gray-100 text-gray-800'
-          : 'bg-red-100 text-red-800'
-      }`}
-    >
-      {status}
-    </span>
-  );
-
   if (isLoadingData) {
     return (
       <DashboardLayout>
@@ -160,6 +165,10 @@ export default function UsersPage() {
                   placeholder="Search by name, email, phone, role"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Signed up range</label>
+                <DateRangePicker date={dateRange} onDateChange={setDateRange} />
+              </div>
               <div className="flex items-end gap-2">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Rows</label>
@@ -174,7 +183,10 @@ export default function UsersPage() {
                     <option value={100}>100</option>
                   </select>
                 </div>
-                <Button type="button" variant="outline" onClick={() => setSearch('')}>
+                <Button type="button" variant="outline" onClick={() => {
+                  setSearch('');
+                  setDateRange(undefined);
+                }}>
                   Clear
                 </Button>
               </div>
@@ -224,6 +236,9 @@ export default function UsersPage() {
                         Roles
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Signed Up
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
@@ -250,6 +265,9 @@ export default function UsersPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {getRoleBadge(user.userRoles)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {user.created ? format(parseISO(user.created), 'PPP') : 'N/A'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-2">
