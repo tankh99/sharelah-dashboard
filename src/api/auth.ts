@@ -15,19 +15,19 @@ export interface BackendUser {
   status: string;
   created: string;
   userRoles: string[];
-  profileImageURL: string;
   email: string;
   lastName: string;
   firstName: string;
   __v: number;
   dateOfBirth: string | null;
-  deviceId: string;
-  favoriteMenus: any[];
   gender: string;
   name: string;
-  resetPasswordExpires: string;
-  resetPasswordToken: string;
+  // resetPasswordExpires: string;
+  // resetPasswordToken: string;
   accessToken: string;
+  usedPromoCodes: string[];
+  hasFreeSignup: boolean;
+
 }
 
 export type LoginResponse = BackendUser;

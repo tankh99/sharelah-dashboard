@@ -37,17 +37,17 @@ export const mapBackendUserToFrontend = (backendUser: BackendUser): User => {
   }
 
   // Map status
-  let status: UserStatus;
-  switch (backendUser.status?.toLowerCase()) {
-    case 'active':
-      status = UserStatus.ACTIVE;
-      break;
-    case 'inactive':
-      status = UserStatus.INACTIVE;
-      break;
-    default:
-      status = UserStatus.SUSPENDED;
-  }
+  // let status: UserStatus;
+  // switch (backendUser.status?.toLowerCase()) {
+  //   case 'active':
+  //     status = UserStatus.ACTIVE;
+  //     break;
+  //   case 'inactive':
+  //     status = UserStatus.INACTIVE;
+  //     break;
+  //   default:
+  //     status = UserStatus.SUSPENDED;
+  // }
 
   return {
     _id: backendUser._id,
@@ -57,7 +57,9 @@ export const mapBackendUserToFrontend = (backendUser: BackendUser): User => {
     email: backendUser.email,
     yearOfBirth: 0,
     created: backendUser.created || null,
-    userRoles: roles
+    userRoles: roles,
+    usedPromoCodes: backendUser.usedPromoCodes || [],
+    hasFreeSignup: backendUser.hasFreeSignup,
   };
 };
 
@@ -97,7 +99,9 @@ export const getUserFromToken = (): User | null => {
       email,
       yearOfBirth: 0,
       created: null,
-      userRoles
+      userRoles,
+      usedPromoCodes: [],
+      hasFreeSignup: false,
     };
   } catch (error) {
     console.error('Error getting user from token:', error);
