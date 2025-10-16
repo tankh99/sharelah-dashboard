@@ -8,7 +8,9 @@ export interface User {
   phoneNumber: string;
   email: string;
   created: string | null;
-  userRoles: UserRole[]
+  userRoles: UserRole[];
+  hasFreeSignup: boolean;
+  usedPromoCodes: string[]
 }
 
 export interface Stall {
