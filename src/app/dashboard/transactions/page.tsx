@@ -163,6 +163,8 @@ export default function TransactionsPage() {
     );
   }
 
+  console.log(paginated)
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -183,7 +185,7 @@ export default function TransactionsPage() {
             <CardDescription>All umbrella rental transactions in the system</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="mb-4 flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+            <div className="mb-4 flex flex-col md:flex-row flex-wrap md:items-end md:justify-between gap-3">
               <div className="flex-1 max-w-xl">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
                 <Input
