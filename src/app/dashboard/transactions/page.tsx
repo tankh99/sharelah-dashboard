@@ -163,7 +163,7 @@ export default function TransactionsPage() {
     );
   }
 
-  console.log(paginated)
+  // console.log(paginated)
 
   return (
     <DashboardLayout>
@@ -295,6 +295,9 @@ export default function TransactionsPage() {
                         Stall
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Return Stall
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Amount
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -322,6 +325,14 @@ export default function TransactionsPage() {
                           </div>
                           <div className="text-sm text-gray-500">
                             {transaction.stall?.code || 'No code'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            {transaction.returnStall?.name || 'N/A'}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {transaction.returnStall?.code || ''}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">

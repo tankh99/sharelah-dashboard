@@ -29,6 +29,7 @@ export interface Transaction {
   _id: string;
   user: User | null;
   stall: Stall | null;
+  returnStall: Stall | null;
   amount: number;
   borrowDate: string | null;
   returnDate: string | null;
