@@ -348,8 +348,13 @@ export default function TransactionsPage() {
                             </div>
                           </div>
                           <div className="text-sm text-gray-500">
-                            Return: {transaction.returnDate ? formatDate(transaction.returnDate) : 'Not set'}
+                            <span className="ml-5">Return: {transaction.returnDate ? formatDate(transaction.returnDate) : 'Not set'}</span>
                           </div>
+                          {elapsedBusinessDays(transaction) !== null && (
+                            <div className="text-sm text-gray-500 mt-1">
+                              <span className="ml-5 font-medium">{elapsedBusinessDays(transaction)} business day(s)</span>
+                            </div>
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-2">
